@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carousell — Edit Transition Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & TOKENS ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --red:      #D7222E;
+  --teal:     #1DADA0;
+  --teal-bg:  #E6F7F6;
+  --teal-chip:#C2EDE9;
+  --ink:      #111111;
+  --ink2:     #333333;
+  --muted:    #717171;
+  --sub:      #9E9E9E;
+  --bg:       #F5F5F5;
+  --card:     #FFFFFF;
+  --border:   #E8E8E8;
+  --chip-b:   #D6D6D6;
+  --sidebar-w: 200px;
+}
+
+/* ── SHELL ─────────────────────────────────────── */
+body { font-family:'Inter',sans-serif; background:#141414; min-height:100vh; display:flex; overflow:hidden; }
+
+/* ── LEFT PANEL ─────────────────────────────────── */
+.panel {
+  width:280px; background:#0D0D0D; border-right:1px solid #1F1F1F;
+  display:flex; flex-direction:column; height:100vh; overflow-y:auto; flex-shrink:0;
+}
+.panel-header { padding:24px 20px 16px; border-bottom:1px solid #1F1F1F; }
+.panel-eyebrow { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:#444; margin-bottom:6px; }
+.panel-title { font-size:15px; font-weight:700; color:#fff; line-height:1.3; }
+.panel-sub { font-size:11px; color:#555; margin-top:4px; line-height:1.5; }
+.v-section { padding:16px 12px; border-bottom:1px solid #1A1A1A; }
+.v-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#3D3D3D; padding:0 8px; margin-bottom:8px; }
+.v-btn {
+  width:100%; text-align:left; padding:10px 12px; margin-bottom:4px;
+  background:#161616; border:1.5px solid #252525; border-radius:10px;
+  cursor:pointer; transition:all .15s; font-family:'Inter',sans-serif;
+}
+.v-btn:hover { border-color:#383838; background:#1D1D1D; }
+.v-btn.active { border-color:var(--teal); background:rgba(29,173,160,.1); }
+.v-num { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:#444; margin-bottom:3px; }
+.v-name { font-size:12px; font-weight:700; color:#ddd; margin-bottom:2px; }
+.v-btn.active .v-name { color:var(--teal); }
+.v-desc { font-size:10px; color:#555; line-height:1.45; }
+.v-btn.active .v-desc { color:#3D8F8A; }
+
+.spec-box { margin:0 12px 12px; padding:12px; background:#101010; border-radius:10px; border:1px solid #1E1E1E; }
+.spec-label { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#3D3D3D; margin-bottom:8px; }
+.spec-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #191919; }
+.spec-row:last-child { border-bottom:none; }
+.spec-key { font-size:10px; color:#555; }
+.spec-val { font-size:10px; color:#888; font-family:'SF Mono','Fira Mono',monospace; text-align:right; }
+
+.hint-box {
+  margin:12px; padding:10px 12px; background:rgba(29,173,160,.06);
+  border-radius:8px; border:1px solid rgba(29,173,160,.15);
+  font-size:10px; color:#3D7F7A; line-height:1.5;
+}
+.hint-box strong { color:var(--teal); }
+
+/* ── STAGE ──────────────────────────────────────── */
+.stage { flex:1; display:flex; align-items:center; justify-content:center; background:#141414; position:relative; overflow:hidden; }
+
+/* ── BROWSER MOCKUP ─────────────────────────────── */
+.browser {
+  width:900px; height:660px; background:var(--bg);
+  border-radius:12px; overflow:hidden; position:relative;
+  box-shadow:0 40px 100px rgba(0,0,0,.8), 0 0 0 1px #2A2A2A;
+  display:flex; flex-direction:column;
+}
+.browser-bar {
+  height:44px; background:#F3F3F3; border-bottom:1px solid #E0E0E0;
+  display:flex; align-items:center; padding:0 14px; gap:10px; flex-shrink:0;
+}
+.browser-dots { display:flex; gap:6px; }
+.dot { width:12px; height:12px; border-radius:50%; }
+.dot.r { background:#FF5F57; }
+.dot.y { background:#FFBD2E; }
+.dot.g { background:#28C840; }
+.browser-url {
+  flex:1; height:26px; background:#E8E8E8; border-radius:6px;
+  display:flex; align-items:center; padding:0 10px; gap:6px;
+  font-size:11px; color:#555; white-space:nowrap; overflow:hidden;
+}
+
+/* ── PAGE ROOT ──────────────────────────────────── */
+.page { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+
+/* ── GLOBAL NAV ─────────────────────────────────── */
+.g-nav {
+  display:flex; align-items:center; padding:0 20px;
+  height:50px; background:#fff; border-bottom:1px solid var(--border);
+  flex-shrink:0; position:relative; z-index:20;
+  gap:12px;
+}
+.logo-box {
+  width:28px; height:28px; background:var(--red); border-radius:7px;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:13px; font-weight:900; flex-shrink:0;
+}
+.nav-links { display:flex; gap:2px; flex:1; min-width:0; }
+.nav-link {
+  font-size:12px; color:var(--ink2); text-decoration:none;
+  padding:5px 8px; border-radius:5px; white-space:nowrap;
+  transition:background .15s;
+}
+.nav-link:hover { background:var(--bg); }
+.nav-link.bold { font-weight:600; color:var(--ink); }
+.nav-actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.btn-ghost { font-size:12px; font-weight:500; color:var(--ink); background:none; border:none; cursor:pointer; padding:5px 8px; border-radius:6px; font-family:'Inter',sans-serif; }
+.btn-sell { font-size:12px; font-weight:700; color:#fff; background:var(--red); border:none; cursor:pointer; padding:6px 14px; border-radius:7px; font-family:'Inter',sans-serif; }
+
+/* Secondary search bar — below primary nav */
+.nav-search {
+  display:flex; align-items:center; gap:8px;
+  background:#fff; border-bottom:1px solid var(--border);
+  padding:0 20px; height:0; overflow:hidden;
+  opacity:0; pointer-events:none; flex-shrink:0;
+  transition:none;
+}
+.nav-search-icon { font-size:13px; color:var(--sub); flex-shrink:0; }
+.nav-search input {
+  flex:1; background:none; border:none; outline:none;
+  font-family:'Inter',sans-serif; font-size:13px; color:var(--ink);
+  min-width:0;
+}
+.nav-search-clear {
+  font-size:16px; color:var(--sub); cursor:pointer; flex-shrink:0;
+  line-height:1; padding:0 4px;
+}
+.nav-search-btn {
+  background:var(--teal); color:#fff; border:none; cursor:pointer;
+  padding:6px 16px; border-radius:7px; font-size:13px; font-weight:700;
+  font-family:'Inter',sans-serif; flex-shrink:0; white-space:nowrap;
+}
+.nav-search-inner {
+  flex:1; display:flex; align-items:center; gap:8px;
+  background:#F5F5F5; border:1.5px solid var(--border);
+  border-radius:8px; padding:0 10px; height:36px; min-width:0;
+}
+
+/* ── PAGE BODY ──────────────────────────────────── */
+.page-body { flex:1; display:flex; overflow:hidden; }
+
+/* ── SIDEBAR ────────────────────────────────────── */
+.sidebar {
+  width:var(--sidebar-w); background:#fff;
+  border-right:1px solid var(--border);
+  padding:14px 14px 20px;
+  flex-shrink:0; overflow-y:auto; overflow-x:hidden;
+  display:flex; flex-direction:column; gap:14px;
+}
+.sidebar::-webkit-scrollbar { display:none; }
+
+.sidebar-top { display:flex; justify-content:flex-end; }
+.edit-btn {
+  width:28px; height:28px; border-radius:7px;
+  border:1.5px solid var(--border); background:#fff;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:13px; color:var(--sub);
+  transition:all .15s;
+}
+.edit-btn:hover { border-color:var(--teal); color:var(--teal); background:var(--teal-bg); }
+
+/* The query text in sidebar */
+.sidebar-query {
+  font-size:13px; font-weight:700; color:var(--ink);
+  line-height:1.4;
+}
+.sidebar-query .hi { color:var(--teal); }
+
+.filter-label {
+  font-size:9px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.8px; color:var(--sub); margin-bottom:8px;
+}
+.chip-grid { display:flex; flex-wrap:wrap; gap:5px; }
+.chip {
+  font-size:11px; font-weight:500; padding:4px 9px;
+  border-radius:100px; border:1.5px solid transparent;
+  cursor:pointer; white-space:nowrap; flex-shrink:0;
+}
+.chip-on  { background:var(--teal-chip); color:#0A6E68; }
+.chip-off { background:#fff; color:var(--ink2); border-color:var(--chip-b); }
+.chip-add { background:#fff; color:var(--sub); border:1.5px dashed var(--chip-b); }
+
+.budget-chip-grid { display:flex; flex-wrap:wrap; gap:5px; }
+.bchip {
+  font-size:11px; font-weight:500; padding:4px 9px;
+  border-radius:100px; border:1.5px solid var(--chip-b);
+  cursor:pointer; white-space:nowrap;
+  background:#fff; color:var(--ink2);
+}
+.bchip.on { background:var(--teal-chip); color:#0A6E68; border-color:transparent; }
+.bchip-custom { background:#fff; color:var(--sub); border:1.5px dashed var(--chip-b); }
+
+/* ── MAIN CONTENT ───────────────────────────────── */
+.content { flex:1; overflow-y:auto; padding:10px 20px 40px; }
+.content::-webkit-scrollbar { width:5px; }
+.content::-webkit-scrollbar-thumb { background:#ddd; border-radius:3px; }
+
+.breadcrumb { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--sub); padding:4px 0 10px; }
+.breadcrumb a { color:var(--sub); text-decoration:none; }
+.bc-sep { font-size:9px; color:#ccc; }
+
+.ai-row { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+.ai-star {
+  width:16px; height:16px; border-radius:4px;
+  background:linear-gradient(135deg,#3B82F6,var(--teal));
+  display:flex; align-items:center; justify-content:center;
+  font-size:9px; color:#fff;
+}
+.ai-label { font-size:13px; font-weight:700; color:var(--ink); }
+.ai-desc { font-size:11px; color:var(--sub); margin-bottom:10px; line-height:1.4; }
+
+.results-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px;
+}
+.results-num { font-size:13px; font-weight:700; color:var(--ink); }
+.save-btn { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--sub); }
+.toggle { width:32px; height:18px; background:#ddd; border-radius:9px; position:relative; cursor:pointer; }
+.toggle-k { width:14px; height:14px; background:#fff; border-radius:50%; position:absolute; top:2px; left:2px; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+
+.card-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.card { background:var(--card); border-radius:10px; overflow:hidden; cursor:pointer; transition:transform .2s, box-shadow .2s; }
+.card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.08); }
+.card-img { width:100%; aspect-ratio:4/3; display:block; }
+
+/* SVG car art */
+.car-art {
+  width:100%; aspect-ratio:4/3;
+  display:flex; align-items:center; justify-content:center;
+}
+.card-body { padding:8px 10px 10px; }
+.card-price-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
+.card-price { font-size:13px; font-weight:700; color:var(--ink); }
+.card-like { font-size:10px; color:var(--sub); }
+.card-title { font-size:11px; color:var(--ink2); margin-bottom:7px; line-height:1.3; }
+.card-footer { display:flex; justify-content:space-between; align-items:center; }
+.seller { display:flex; align-items:center; gap:5px; }
+.av { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff; }
+.seller-name { font-size:10px; color:var(--sub); }
+.seller-time { font-size:9px; color:#bbb; }
+.chat-btn { font-size:10px; color:var(--ink2); border:1.5px solid var(--border); border-radius:20px; padding:3px 8px; background:#fff; cursor:pointer; font-family:'Inter',sans-serif; }
+
+/* ── STATE MACHINE ──────────────────────────────── */
+.page[data-state="searchbar"] .nav-search {
+  opacity:1; pointer-events:all; height:52px;
+}
+
+/* Flying ghost element (created in JS) */
+.ghost-query {
+  position:fixed; pointer-events:none; z-index:999;
+  font-family:'Inter',sans-serif; font-weight:700;
+  color:var(--ink); line-height:1.4;
+  overflow:hidden;
+}
+.ghost-query .hi { color:var(--teal); }
+
+/* State pill */
+.state-pill {
+  position:absolute; top:10px; right:14px; z-index:30;
+  background:rgba(0,0,0,.65); backdrop-filter:blur(8px);
+  border-radius:100px; padding:3px 9px;
+  font-size:9px; font-weight:700; letter-spacing:.5px; color:#888;
+  pointer-events:none; transition:color .3s;
+}
+.state-pill.sb { color:var(--teal); }
+</style>
+</head>
+<body>
+
+<!-- ── LEFT PANEL ──────────────────────────────── -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-eyebrow">Carousell · SERP Edit</div>
+    <div class="panel-title">Edit → Search Bar Transition</div>
+    <div class="panel-sub">Click the ✎ pencil icon inside the browser to trigger</div>
+  </div>
+
+  <div class="v-section">
+    <div class="v-label">Transition Variants</div>
+
+    <button class="v-btn active" onclick="selectVariant(this,'shared-float')">
+      <div class="v-num">01</div>
+      <div class="v-name">Shared Element Float</div>
+      <div class="v-desc">Query text physically flies from sidebar to the search bar. Most dramatic & satisfying.</div>
+    </button>
+
+    <button class="v-btn" onclick="selectVariant(this,'container-morph')">
+      <div class="v-num">02</div>
+      <div class="v-name">Container Morph</div>
+      <div class="v-desc">Sidebar card morphs its bounding box into the nav search field. Material Design M3.</div>
+    </button>
+
+    <button class="v-btn" onclick="selectVariant(this,'slide-dissolve')">
+      <div class="v-num">03</div>
+      <div class="v-name">Slide & Dissolve</div>
+      <div class="v-desc">Sidebar slides left-out while search bar fades down. Content expands to fill. Clean.</div>
+    </button>
+
+    <button class="v-btn" onclick="selectVariant(this,'spring-collapse')">
+      <div class="v-num">04</div>
+      <div class="v-name">Spring Collapse</div>
+      <div class="v-desc">Sidebar springs-collapses with bounce. Search bar pops in with overshoot. Snappy.</div>
+    </button>
+  </div>
+
+  <div class="spec-box">
+    <div class="spec-label">Motion Spec</div>
+    <div class="spec-row"><span class="spec-key">Duration</span><span class="spec-val" id="s-dur">400ms</span></div>
+    <div class="spec-row"><span class="spec-key">Easing</span><span class="spec-val" id="s-ease">Spring organic</span></div>
+    <div class="spec-row"><span class="spec-key">Shared element</span><span class="spec-val" id="s-shared">query text</span></div>
+    <div class="spec-row"><span class="spec-key">Trigger</span><span class="spec-val">✎ edit icon click</span></div>
+  </div>
+
+  <div class="hint-box">
+    <strong>Click ✎</strong> in the sidebar to open search bar.<br>
+    <strong>Click × or Search</strong> to return to sidebar.
+  </div>
+</div>
+
+<!-- ── STAGE ──────────────────────────────────── -->
+<div class="stage">
+  <div class="browser">
+    <div class="browser-bar">
+      <div class="browser-dots">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+      </div>
+      <div class="browser-url">🔒 carousell.sg/cars/used-cars?q=asian+suv&budget=30000</div>
+    </div>
+
+    <!-- State pill -->
+    <div class="state-pill" id="statePill">SIDEBAR</div>
+
+    <!-- PAGE -->
+    <div class="page" id="page" data-state="sidebar">
+
+      <!-- Global nav -->
+      <nav class="g-nav" id="gnav">
+        <div class="logo-box">C</div>
+        <div class="nav-links" id="navLinks">
+          <a class="nav-link" href="#">Electronics</a>
+          <a class="nav-link" href="#">Fashion</a>
+          <a class="nav-link" href="#">Luxury</a>
+          <a class="nav-link" href="#">Services</a>
+          <a class="nav-link bold" href="#">Cars</a>
+          <a class="nav-link" href="#">Property</a>
+          <a class="nav-link" href="#">⊞ All categories</a>
+        </div>
+        <div class="nav-actions">
+          <button class="btn-ghost">Register</button>
+          <button class="btn-ghost">Login</button>
+          <button class="btn-sell">Sell</button>
+        </div>
+      </nav>
+
+      <!-- Secondary search bar — below primary nav -->
+      <div class="nav-search" id="navSearch">
+        <div class="nav-search-inner">
+          <span class="nav-search-icon">🔍</span>
+          <input id="navInput" value="I'm looking for a reliable, spacious family friendly SUV with high performance" readonly>
+          <span class="nav-search-clear" id="clearBtn">×</span>
+        </div>
+        <button class="nav-search-btn" id="searchBtn">Search</button>
+      </div>
+
+      <div class="page-body">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-top">
+            <button class="edit-btn" id="editBtn" title="Edit search">✎</button>
+          </div>
+          <div class="sidebar-query" id="sidebarQuery">
+            I'm looking for a reliable, spacious family friendly SUV with <span class="hi">high performance</span>
+          </div>
+          <div>
+            <div class="filter-label">Describe your ideal cars</div>
+            <div class="chip-grid">
+              <span class="chip chip-on">Family-friendly</span>
+              <span class="chip chip-on">Asian</span>
+              <span class="chip chip-on">SUV</span>
+              <span class="chip chip-off">5 seaters</span>
+              <span class="chip chip-off">Performance</span>
+              <span class="chip chip-off">&lt;2 owners</span>
+              <span class="chip chip-off">&lt; 4,400km/yr</span>
+              <span class="chip chip-off">Continental</span>
+              <span class="chip chip-add">Add +</span>
+            </div>
+          </div>
+          <div>
+            <div class="filter-label">Budget</div>
+            <div class="budget-chip-grid">
+              <span class="bchip on">Below $30,000</span>
+              <span class="bchip">$40,000</span>
+              <span class="bchip">$50,000</span>
+              <span class="bchip bchip-custom">Custom +</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="content" id="content">
+          <div class="breadcrumb">
+            <a href="#">Home</a><span class="bc-sep">›</span>
+            <a href="#">Cars</a><span class="bc-sep">›</span>
+            <span>Used cars</span>
+          </div>
+          <div class="ai-row">
+            <div class="ai-star">✦</div>
+            <span class="ai-label">Found by AI</span>
+          </div>
+          <div class="ai-desc">Compact SUV. Reliable, spacious family friendly SUV with high performance super long prompt so that users can do something</div>
+          <div class="results-bar">
+            <span class="results-num">850 search results</span>
+            <div class="save-btn">
+              Save this search
+              <div class="toggle"><div class="toggle-k"></div></div>
+              <span style="color:#bbb;font-size:13px">⚙</span>
+            </div>
+          </div>
+          <div class="card-grid" id="cardGrid"></div>
+        </main>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── DATA ─────────────────────────────────────── */
+const CARS = [
+  {price:'S$43,888',likes:12,title:'Honda Jazz 1.5 VTIR CVT ABS',seller:'Landrover SG',t:'2h ago',c:'#B8B8B8',g:'#C8C8C8'},
+  {price:'S$38,500',likes:8, title:'Toyota RAV4 2.0 CVT Sunroof 7-seater',seller:'AutoPrime',t:'3h ago',c:'#3A5F95',g:'#5A7FAF'},
+  {price:'S$29,800',likes:24,title:'Honda CR-V 2.0 i-VTEC Executive',seller:'SG Motors',t:'5h ago',c:'#D8D0C0',g:'#E8E0D0'},
+  {price:'S$35,200',likes:6, title:'Mazda CX-5 2.0 Skyactiv-G 2WD',seller:'MazdaDirect',t:'1d ago',c:'#A0291B',g:'#C03020'},
+  {price:'S$31,500',likes:15,title:'Subaru Forester 2.0i-L EyeSight',seller:'SubaruSG',t:'1d ago',c:'#1C2E40',g:'#2C3E50'},
+  {price:'S$27,900',likes:19,title:'Mitsubishi ASX 2.0 CVT 5-seater',seller:'MitsuDirect',t:'2d ago',c:'#7E7E7E',g:'#9E9E9E'},
+];
+
+function buildCards() {
+  const g = document.getElementById('cardGrid');
+  CARS.forEach(c => {
+    const ini = c.seller.split(' ').map(w=>w[0]).join('').slice(0,2);
+    const hue = Math.abs(c.seller.charCodeAt(0)*3 + 60) % 360;
+    g.innerHTML += `
+    <div class="card">
+      <div class="car-art" style="background:linear-gradient(135deg,${c.c},${c.g})">
+        <svg viewBox="0 0 200 120" width="70%" fill="none" opacity=".22">
+          <ellipse cx="100" cy="88" rx="85" ry="9" fill="#000"/>
+          <rect x="18" y="60" width="164" height="28" rx="8" fill="#fff"/>
+          <path d="M50 60 C56 40 76 28 100 28 C124 28 144 40 150 60Z" fill="#fff"/>
+          <circle cx="47" cy="88" r="13" fill="#333"/><circle cx="47" cy="88" r="6" fill="#666"/>
+          <circle cx="153" cy="88" r="13" fill="#333"/><circle cx="153" cy="88" r="6" fill="#666"/>
+          <rect x="53" y="32" width="37" height="25" rx="3" fill="rgba(100,200,255,.35)"/>
+          <rect x="95" y="32" width="37" height="25" rx="3" fill="rgba(100,200,255,.35)"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-price-row">
+          <span class="card-price">${c.price}</span>
+          <span class="card-like">♡ ${c.likes}</span>
+        </div>
+        <div class="card-title">${c.title}</div>
+        <div class="card-footer">
+          <div class="seller">
+            <div class="av" style="background:hsl(${hue},50%,45%)">${ini}</div>
+            <div><div class="seller-name">${c.seller}</div><div class="seller-time">${c.t}</div></div>
+          </div>
+          <button class="chat-btn">💬 Chat</button>
+        </div>
+      </div>
+    </div>`;
+  });
+}
+buildCards();
+
+/* ── VARIANT CONFIG ───────────────────────────── */
+let currentVariant = 'shared-float';
+let isSearchBar    = false;
+let animating      = false;
+
+const VARIANTS = {
+  'shared-float': {
+    dur:380, ease:'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    sidebarExit:'slide-fade-left', navSearchEnter:'fade-scale',
+    specDur:'380ms', specEase:'Organic decelerate', specShared:'query text (FLIP)',
+  },
+  'container-morph': {
+    dur:450, ease:'cubic-bezier(0.2, 0, 0, 1)',
+    sidebarExit:'clip-left', navSearchEnter:'morph-expand',
+    specDur:'450ms', specEase:'M3 Standard (0.2,0,0,1)', specShared:'container box',
+  },
+  'slide-dissolve': {
+    dur:320, ease:'cubic-bezier(0.3, 0, 0, 1)',
+    sidebarExit:'slide-left', navSearchEnter:'slide-down-fade',
+    specDur:'320ms', specEase:'M3 Decelerate (0.3,0,0,1)', specShared:'none',
+  },
+  'spring-collapse': {
+    dur:360, ease:'linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1)',
+    sidebarExit:'spring-collapse', navSearchEnter:'spring-pop',
+    specDur:'360ms', specEase:'Spring linear() curve', specShared:'none',
+  },
+};
+
+function selectVariant(btn, key) {
+  document.querySelectorAll('.v-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentVariant = key;
+  const v = VARIANTS[key];
+  document.getElementById('s-dur').textContent    = v.specDur;
+  document.getElementById('s-ease').textContent   = v.specEase;
+  document.getElementById('s-shared').textContent = v.specShared;
+}
+
+/* ── ELEMENTS ─────────────────────────────────── */
+const page      = document.getElementById('page');
+const sidebar   = document.getElementById('sidebar');
+const sidebarQ  = document.getElementById('sidebarQuery');
+const navSearch = document.getElementById('navSearch');
+const navInput  = document.getElementById('navInput');
+const statePill = document.getElementById('statePill');
+const content   = document.getElementById('content');
+
+/* Measure navSearch rect when shown (height 0 → need temp reveal) */
+function getNavSearchRect() {
+  navSearch.style.height = '52px';
+  const r = navInput.getBoundingClientRect();
+  navSearch.style.height = '0';
+  return r;
+}
+
+/* ── TRANSITION ENGINE ────────────────────────── */
+document.getElementById('editBtn').addEventListener('click', () => {
+  if (!isSearchBar && !animating) toSearchBar();
+});
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (isSearchBar && !animating) toSidebar();
+});
+document.getElementById('searchBtn').addEventListener('click', () => {
+  if (isSearchBar && !animating) toSidebar();
+});
+
+function toSearchBar() {
+  animating = true;
+  const v = VARIANTS[currentVariant];
+
+  if (currentVariant === 'shared-float') {
+    animSharedFloat(v, true, done);
+  } else if (currentVariant === 'container-morph') {
+    animContainerMorph(v, true, done);
+  } else if (currentVariant === 'slide-dissolve') {
+    animSlideDissolve(v, true, done);
+  } else if (currentVariant === 'spring-collapse') {
+    animSpringCollapse(v, true, done);
+  }
+
+  function done() {
+    isSearchBar = true; animating = false;
+    page.dataset.state = 'searchbar';
+    statePill.textContent = 'SEARCH BAR';
+    statePill.classList.add('sb');
+    navInput.focus();
+  }
+}
+
+function toSidebar() {
+  animating = true;
+  const v = VARIANTS[currentVariant];
+
+  if (currentVariant === 'shared-float') {
+    animSharedFloat(v, false, done);
+  } else if (currentVariant === 'container-morph') {
+    animContainerMorph(v, false, done);
+  } else if (currentVariant === 'slide-dissolve') {
+    animSlideDissolve(v, false, done);
+  } else if (currentVariant === 'spring-collapse') {
+    animSpringCollapse(v, false, done);
+  }
+
+  function done() {
+    isSearchBar = false; animating = false;
+    page.dataset.state = 'sidebar';
+    statePill.textContent = 'SIDEBAR';
+    statePill.classList.remove('sb');
+  }
+}
+
+/* helpers */
+function showNavSearch(DUR, EASE) {
+  navSearch.style.transition = `height ${DUR}ms ${EASE}, opacity ${Math.round(DUR*0.6)}ms ease`;
+  navSearch.style.height = '52px';
+  navSearch.style.opacity = '1';
+  navSearch.style.pointerEvents = 'all';
+}
+function hideNavSearch(DUR, EASE) {
+  navSearch.style.transition = `height ${DUR}ms ${EASE}, opacity ${Math.round(DUR*0.4)}ms ease`;
+  navSearch.style.height = '0';
+  navSearch.style.opacity = '0';
+  navSearch.style.pointerEvents = 'none';
+}
+function resetNavSearch() {
+  navSearch.style.transition = '';
+  navSearch.style.height = '';
+  navSearch.style.opacity = '';
+  navSearch.style.pointerEvents = '';
+  navSearch.style.transform = '';
+  navSearch.style.transformOrigin = '';
+}
+
+/* ─────────────────────────────────────────────── */
+/* VARIANT 1: Shared Element Float                 */
+/* ─────────────────────────────────────────────── */
+function animSharedFloat(v, forward, cb) {
+  const DUR  = v.dur;
+  const EASE = v.ease;
+  const DUR2 = Math.round(DUR * 0.65);
+
+  if (forward) {
+    const srcRect  = sidebarQ.getBoundingClientRect();
+    const destRect = getNavSearchRect();
+
+    // Create ghost clone
+    const ghost = document.createElement('div');
+    ghost.className = 'ghost-query';
+    ghost.innerHTML = sidebarQ.innerHTML;
+    ghost.style.cssText = `
+      left:${srcRect.left}px; top:${srcRect.top}px;
+      width:${srcRect.width}px; font-size:13px;
+      white-space:normal; transform-origin:left top;
+    `;
+    document.body.appendChild(ghost);
+
+    // Fade sidebar query out immediately
+    sidebarQ.style.opacity = '0';
+
+    // Phase 1: sidebar collapses (width → 0)
+    sidebar.style.transition = `width ${DUR}ms ${EASE}, opacity ${DUR2}ms ease`;
+    sidebar.style.width = '0';
+    sidebar.style.overflow = 'hidden';
+    sidebar.style.opacity = '0';
+
+    // Animate ghost to nav input position
+    const dX = destRect.left - srcRect.left;
+    const dY = destRect.top  - srcRect.top;
+    const scaleX = destRect.width / srcRect.width;
+
+    ghost.style.transition = `transform ${DUR}ms ${EASE}, opacity ${DUR}ms ease`;
+    ghost.style.transform  = `translate(${dX}px, ${dY}px) scaleX(${scaleX})`;
+    ghost.style.opacity    = '0.5';
+
+    setTimeout(() => showNavSearch(DUR2, EASE), DUR * 0.45);
+    setTimeout(() => { ghost.style.opacity = '0'; }, DUR * 0.7);
+    setTimeout(() => { ghost.remove(); sidebarQ.style.opacity=''; cb(); }, DUR + 40);
+
+  } else {
+    // Reverse: search bar → sidebar
+    const srcRect  = navInput.getBoundingClientRect();
+
+    // Temporarily restore sidebar to measure
+    sidebar.style.transition = 'none';
+    sidebar.style.width = '200px';
+    sidebar.style.opacity = '0';
+    sidebar.style.overflow = 'visible';
+
+    requestAnimationFrame(() => {
+      const destRect = sidebarQ.getBoundingClientRect();
+
+      // Create ghost from nav search position
+      const ghost = document.createElement('div');
+      ghost.className = 'ghost-query';
+      ghost.innerHTML = sidebarQ.innerHTML;
+      ghost.style.cssText = `
+        left:${srcRect.left}px; top:${srcRect.top}px;
+        width:${srcRect.width}px; font-size:13px;
+        white-space:normal; transform-origin:left top;
+        opacity:0;
+      `;
+      document.body.appendChild(ghost);
+
+      hideNavSearch(Math.round(v.dur * 0.5), EASE);
+
+      setTimeout(() => {
+        navSearch.style.pointerEvents = 'none';
+        ghost.style.opacity = '0.7';
+
+        const dX = destRect.left - srcRect.left;
+        const dY = destRect.top  - srcRect.top;
+        const scaleX = destRect.width / srcRect.width;
+
+        ghost.style.transition = `transform ${v.dur}ms ${EASE}, opacity ${v.dur}ms ease`;
+        ghost.style.transform  = `translate(${dX}px, ${dY}px) scaleX(${scaleX})`;
+        ghost.style.opacity    = '0.9';
+
+        // Sidebar appears
+        sidebar.style.transition = `width ${v.dur}ms ${EASE}, opacity ${Math.round(v.dur * 0.7)}ms ease`;
+        sidebar.style.opacity = '1';
+
+        setTimeout(() => {
+          ghost.style.opacity = '0';
+        }, v.dur * 0.6);
+
+        setTimeout(() => {
+          ghost.remove();
+          sidebarQ.style.opacity = '1';
+          resetNavSearch();
+          sidebar.style.width = '';
+          sidebar.style.overflow = '';
+          sidebar.style.opacity = '';
+          sidebar.style.transition = '';
+          cb();
+        }, v.dur + 40);
+      }, 40);
+    });
+  }
+}
+
+/* ─────────────────────────────────────────────── */
+/* VARIANT 2: Container Morph                      */
+/* ─────────────────────────────────────────────── */
+function animContainerMorph(v, forward, cb) {
+  const DUR  = v.dur;
+  const EASE = v.ease;
+
+  if (forward) {
+    const sidebarRect  = sidebar.getBoundingClientRect();
+    const navRect      = getNavSearchRect();
+
+    // Create a morph overlay
+    const morph = document.createElement('div');
+    morph.style.cssText = `
+      position:fixed; z-index:999; border-radius:10px;
+      background:#fff; border:1.5px solid #E8E8E8;
+      overflow:hidden;
+      left:${sidebarRect.left}px; top:${sidebarRect.top}px;
+      width:${sidebarRect.width}px; height:${sidebarRect.height}px;
+      transition: all ${DUR}ms ${EASE};
+      box-shadow: 0 0 0 rgba(0,0,0,0);
+    `;
+    document.body.appendChild(morph);
+
+    // Fade sidebar content immediately
+    sidebar.style.opacity = '0';
+    sidebar.style.transition = `opacity 80ms ease`;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        morph.style.left        = `${navRect.left - 6}px`;
+        morph.style.top         = `${navRect.top - 2}px`;
+        morph.style.width       = `${navRect.width + 12}px`;
+        morph.style.height      = `${navRect.height + 4}px`;
+        morph.style.borderRadius = '8px';
+        morph.style.boxShadow   = '0 2px 8px rgba(0,0,0,.08)';
+        morph.style.background  = '#F5F5F5';
+
+        // Sidebar width collapse
+        sidebar.style.transition = `width ${DUR}ms ${EASE}, opacity 80ms ease`;
+        sidebar.style.width = '0';
+        sidebar.style.overflow = 'hidden';
+
+        setTimeout(() => showNavSearch(Math.round(DUR*0.35), EASE), DUR * 0.72);
+        setTimeout(() => { morph.remove(); sidebar.style.opacity=''; cb(); }, DUR + 40);
+      });
+    });
+
+  } else {
+    // Reverse morph
+    const navRect     = navSearch.getBoundingClientRect();
+    sidebar.style.transition = 'none';
+    sidebar.style.width = '200px';
+    sidebar.style.overflow = 'visible';
+    sidebar.style.opacity = '0';
+
+    requestAnimationFrame(() => {
+      const sidebarRect = sidebar.getBoundingClientRect();
+
+      const morph = document.createElement('div');
+      morph.style.cssText = `
+        position:fixed; z-index:999; border-radius:8px;
+        background:#F5F5F5; border:1.5px solid #E8E8E8;
+        overflow:hidden;
+        left:${navRect.left - 6}px; top:${navRect.top - 2}px;
+        width:${navRect.width + 12}px; height:${navRect.height + 4}px;
+        transition: all ${DUR}ms ${EASE};
+      `;
+      document.body.appendChild(morph);
+
+      hideNavSearch(Math.round(DUR*0.35), EASE);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          morph.style.left        = `${sidebarRect.left}px`;
+          morph.style.top         = `${sidebarRect.top}px`;
+          morph.style.width       = `${sidebarRect.width}px`;
+          morph.style.height      = `${sidebarRect.height}px`;
+          morph.style.borderRadius = '10px';
+          morph.style.background  = '#fff';
+
+          setTimeout(() => {
+            sidebar.style.opacity = '1';
+            sidebar.style.transition = `opacity ${Math.round(DUR * 0.3)}ms ease`;
+          }, DUR * 0.7);
+
+          setTimeout(() => {
+            morph.remove(); resetNavSearch();
+            sidebar.style.width=''; sidebar.style.overflow='';
+            sidebar.style.opacity=''; sidebar.style.transition='';
+            cb();
+          }, DUR + 40);
+        });
+      });
+    });
+  }
+}
+
+/* ─────────────────────────────────────────────── */
+/* VARIANT 3: Slide & Dissolve                     */
+/* ─────────────────────────────────────────────── */
+function animSlideDissolve(v, forward, cb) {
+  const DUR  = v.dur;
+  const EASE = v.ease;
+
+  if (forward) {
+    sidebar.style.transition  = `transform ${DUR}ms ${EASE}, opacity ${Math.round(DUR * 0.5)}ms ease`;
+    sidebar.style.transform   = `translateX(-100%)`;
+    sidebar.style.opacity     = '0';
+    sidebar.style.overflow    = 'hidden';
+
+    setTimeout(() => {
+      sidebar.style.width = '0';
+      showNavSearch(Math.round(DUR*0.5), EASE);
+    }, DUR * 0.3);
+
+    setTimeout(() => {
+      navSearch.style.pointerEvents = 'all';
+      sidebar.style.overflow = 'hidden';
+      cb();
+    }, DUR + 60);
+
+  } else {
+    hideNavSearch(Math.round(DUR*0.4), EASE);
+
+    setTimeout(() => {
+      sidebar.style.transition = 'none';
+      sidebar.style.width = '200px'; sidebar.style.overflow = 'visible';
+      sidebar.style.opacity = '0'; sidebar.style.transform = 'translateX(-30px)';
+
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        sidebar.style.transition = `transform ${DUR}ms ${EASE}, opacity ${Math.round(DUR*0.6)}ms ease`;
+        sidebar.style.transform  = 'translateX(0)';
+        sidebar.style.opacity    = '1';
+      }));
+    }, DUR * 0.3);
+
+    setTimeout(() => {
+      sidebar.style.width=''; sidebar.style.overflow='';
+      sidebar.style.opacity=''; sidebar.style.transform=''; sidebar.style.transition='';
+      resetNavSearch(); cb();
+    }, DUR + 80);
+  }
+}
+
+/* ─────────────────────────────────────────────── */
+/* VARIANT 4: Spring Collapse / Pop               */
+/* ─────────────────────────────────────────────── */
+function animSpringCollapse(v, forward, cb) {
+  const DUR  = v.dur;
+  const EASE = v.ease; // spring curve
+
+  // Bouncy easing for nav search pop-in
+  const BOUNCE = 'cubic-bezier(0.3, 0, 0, 1.3)';
+
+  if (forward) {
+    sidebar.style.transition = `width ${DUR}ms ${EASE}, opacity ${Math.round(DUR * 0.4)}ms ease`;
+    sidebar.style.width      = '0';
+    sidebar.style.overflow   = 'hidden';
+    sidebar.style.opacity    = '0';
+
+    // Nav search pops in with bounce
+    setTimeout(() => {
+      navSearch.style.transition = 'none';
+      navSearch.style.height = '52px';
+      navSearch.style.opacity = '0';
+      navSearch.style.transform = 'scaleY(0.6)';
+      navSearch.style.transformOrigin = 'top center';
+
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        navSearch.style.transition = `transform ${Math.round(DUR*0.7)}ms ${BOUNCE}, opacity ${Math.round(DUR*0.4)}ms ease`;
+        navSearch.style.transform  = 'scaleY(1)';
+        navSearch.style.opacity    = '1';
+        navSearch.style.pointerEvents = 'all';
+      }));
+    }, DUR * 0.4);
+
+    setTimeout(() => {
+      navSearch.style.pointerEvents = 'all';
+      cb();
+    }, DUR + 80);
+
+  } else {
+    // Spring collapse nav search back
+    navSearch.style.transition = `transform ${Math.round(DUR*0.4)}ms ${EASE}, opacity ${Math.round(DUR*0.3)}ms ease`;
+    navSearch.style.transform  = 'scaleY(0.5)';
+    navSearch.style.opacity    = '0';
+    navSearch.style.pointerEvents = 'none';
+    navSearch.style.transformOrigin = 'top center';
+    setTimeout(() => {
+      navSearch.style.transition = `height ${Math.round(DUR*0.35)}ms ${EASE}`;
+      navSearch.style.height = '0';
+    }, DUR * 0.25);
+
+    setTimeout(() => {
+      sidebar.style.transition = 'none';
+      sidebar.style.width      = '200px';
+      sidebar.style.overflow   = 'visible';
+      sidebar.style.opacity    = '0';
+      sidebar.style.transform  = 'scaleY(0.8)';
+      sidebar.style.transformOrigin = 'top center';
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          sidebar.style.transition = `transform ${DUR}ms ${BOUNCE}, opacity ${Math.round(DUR * 0.5)}ms ease`;
+          sidebar.style.transform  = 'scaleY(1)';
+          sidebar.style.opacity    = '1';
+        });
+      });
+    }, DUR * 0.35);
+
+    setTimeout(() => {
+      sidebar.style.width=''; sidebar.style.overflow='';
+      sidebar.style.opacity=''; sidebar.style.transform='';
+      sidebar.style.transition=''; sidebar.style.transformOrigin='';
+      resetNavSearch(); cb();
+    }, DUR + 100);
+  }
+}
+
+/* ── INIT ─────────────────────────────────────── */
+selectVariant(document.querySelector('.v-btn.active'), 'shared-float');
+</script>
+</body>
+</html>

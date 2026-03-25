@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carousell — Scroll Header Collapse Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & ROOT ─────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --carousell-red: #D7222E;
+  --teal: #1DADA0;
+  --teal-bg: #E6F7F6;
+  --teal-chip: #C2EDE9;
+  --ink: #111111;
+  --ink2: #333333;
+  --muted: #717171;
+  --subdued: #9E9E9E;
+  --bg: #F5F5F5;
+  --card: #FFFFFF;
+  --border: #E8E8E8;
+  --chip-border: #D6D6D6;
+
+  /* Motion tokens — overridden per variant */
+  --dur-collapse: 320ms;
+  --ease-collapse: cubic-bezier(0.3, 0, 0, 1);
+  --dur-chips: 280ms;
+  --ease-chips: cubic-bezier(0.3, 0, 0, 1);
+  --dur-fade: 200ms;
+  --ease-fade: cubic-bezier(0.3, 0, 0, 1);
+  --stagger-label: 0ms;
+  --stagger-heading: 0ms;
+  --stagger-chips: 0ms;
+}
+
+/* ── STAGE LAYOUT ─────────────────────────────── */
+body {
+  font-family: 'Inter', sans-serif;
+  background: #141414;
+  min-height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── SIDE PANEL ─────────────────────────────────── */
+.panel {
+  width: 280px;
+  background: #0D0D0D;
+  border-right: 1px solid #1F1F1F;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.panel-header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid #1F1F1F;
+}
+.panel-eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: #444;
+  margin-bottom: 6px;
+}
+.panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+}
+.panel-sub {
+  font-size: 11px;
+  color: #555;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.variant-section {
+  padding: 16px 12px;
+  border-bottom: 1px solid #1A1A1A;
+}
+.variant-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #3D3D3D;
+  padding: 0 8px;
+  margin-bottom: 8px;
+}
+.variant-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  background: #161616;
+  border: 1.5px solid #252525;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+.variant-btn:hover { border-color: #383838; background: #1D1D1D; }
+.variant-btn.active { border-color: var(--teal); background: rgba(29,173,160,.1); }
+.v-num {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #444;
+  margin-bottom: 3px;
+}
+.v-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ddd;
+  margin-bottom: 2px;
+}
+.variant-btn.active .v-name { color: var(--teal); }
+.v-desc {
+  font-size: 10px;
+  color: #555;
+  line-height: 1.45;
+}
+.variant-btn.active .v-desc { color: #3D8F8A; }
+
+.spec-box {
+  margin: 0 12px 12px;
+  padding: 12px;
+  background: #101010;
+  border-radius: 10px;
+  border: 1px solid #1E1E1E;
+}
+.spec-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #3D3D3D;
+  margin-bottom: 8px;
+}
+.spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid #191919;
+}
+.spec-row:last-child { border-bottom: none; }
+.spec-key { font-size: 10px; color: #555; }
+.spec-val { font-size: 10px; color: #888; font-family: 'SF Mono', 'Fira Mono', monospace; }
+
+.hint-box {
+  margin: 12px;
+  padding: 10px 12px;
+  background: rgba(29,173,160,.06);
+  border-radius: 8px;
+  border: 1px solid rgba(29,173,160,.15);
+  font-size: 10px;
+  color: #3D7F7A;
+  line-height: 1.5;
+}
+.hint-box strong { color: var(--teal); }
+
+/* ── STAGE CENTER ─────────────────────────────── */
+.stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #141414;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── BROWSER CHROME ───────────────────────────── */
+.browser {
+  width: 900px;
+  height: 660px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 40px 100px rgba(0,0,0,.8), 0 0 0 1px #2A2A2A;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.browser-bar {
+  height: 44px;
+  background: #F3F3F3;
+  border-bottom: 1px solid #E0E0E0;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.browser-dots { display: flex; gap: 6px; }
+.dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+}
+.dot.red { background: #FF5F57; }
+.dot.yellow { background: #FFBD2E; }
+.dot.green { background: #28C840; }
+.browser-url {
+  flex: 1;
+  height: 26px;
+  background: #E8E8E8;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 6px;
+  font-size: 11px;
+  color: #555;
+}
+.url-lock { font-size: 10px; opacity: 0.6; }
+
+/* ── PAGE SCROLL WRAPPER ──────────────────────── */
+.page-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+.page-wrap::-webkit-scrollbar { width: 6px; }
+.page-wrap::-webkit-scrollbar-track { background: transparent; }
+.page-wrap::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+
+/* ── STICKY HEADER ────────────────────────────── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-collapse) var(--ease-collapse),
+              box-shadow var(--dur-collapse) var(--ease-collapse);
+}
+.site-header.scrolled {
+  border-color: var(--border);
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+
+/* ── GLOBAL NAV ────────────────────────────────── */
+.global-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 24px;
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 24px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: var(--carousell-red);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+.nav-link {
+  font-size: 13px;
+  color: var(--ink2);
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.nav-link:hover { background: var(--bg); }
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.btn-ghost {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+}
+.btn-sell {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--carousell-red);
+  border: none;
+  cursor: pointer;
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* ── SEARCH HERO (EXPANDED) ────────────────────── */
+.search-hero {
+  padding: 16px 24px 0;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* Hero label row — fades + collapses out on scroll */
+.hero-label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  opacity: 1;
+  transform: translateY(0px);
+  max-height: 28px;
+  transition:
+    opacity var(--dur-fade) var(--ease-fade) calc(0ms + var(--stagger-label)),
+    transform var(--dur-collapse) var(--ease-collapse) calc(0ms + var(--stagger-label)),
+    max-height var(--dur-collapse) var(--ease-collapse) calc(0ms + var(--stagger-label)),
+    margin-bottom var(--dur-collapse) var(--ease-collapse) calc(0ms + var(--stagger-label));
+}
+.site-header.scrolled .hero-label-row {
+  opacity: 0;
+  transform: translateY(-8px);
+  max-height: 0;
+  margin-bottom: 0;
+}
+
+.sparkle-icon {
+  width: 18px; height: 18px;
+  background: linear-gradient(135deg, #3B82F6, var(--teal));
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+.hero-label-text {
+  font-size: 12px;
+  color: var(--subdued);
+  font-weight: 500;
+}
+
+/* Hero heading — slides up + shrinks */
+.hero-heading-wrap {
+  overflow: hidden;
+}
+.hero-heading {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.25;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  opacity: 1;
+  transform: translateY(0px);
+  transition:
+    opacity var(--dur-fade) var(--ease-fade) calc(0ms + var(--stagger-heading)),
+    transform var(--dur-collapse) var(--ease-collapse) calc(0ms + var(--stagger-heading));
+}
+.hero-heading .highlight { color: var(--teal); }
+.edit-icon {
+  color: var(--subdued);
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* Compact heading — shown when scrolled */
+.hero-heading-compact {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(6px);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    opacity var(--dur-fade) var(--ease-fade) calc(40ms + var(--stagger-heading)),
+    transform var(--dur-collapse) var(--ease-collapse) calc(40ms + var(--stagger-heading));
+  pointer-events: none;
+}
+.hero-heading-compact .highlight { color: var(--teal); }
+.site-header.scrolled .hero-heading-compact {
+  opacity: 1;
+  transform: translateY(0px);
+  pointer-events: auto;
+}
+.site-header.scrolled .hero-heading {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.hero-heading-container {
+  position: relative;
+  /* height is animated */
+  height: 54px;
+  transition: height var(--dur-collapse) var(--ease-collapse) calc(0ms + var(--stagger-heading));
+}
+.site-header.scrolled .hero-heading-container {
+  height: 28px;
+}
+
+/* ── CHIP ROW ─────────────────────────────────── */
+.chip-section {
+  padding: 10px 24px 12px;
+  background: #fff;
+  position: relative;
+}
+
+/* Expanded chips (multi-line wrap) */
+.chips-expanded {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  opacity: 1;
+  transform: translateY(0px);
+  max-height: 80px;
+  overflow: hidden;
+  transition:
+    opacity var(--dur-chips) var(--ease-chips) calc(0ms + var(--stagger-chips)),
+    transform var(--dur-chips) var(--ease-chips) calc(0ms + var(--stagger-chips)),
+    max-height var(--dur-chips) var(--ease-chips) calc(0ms + var(--stagger-chips));
+}
+.site-header.scrolled .chips-expanded {
+  opacity: 0;
+  transform: translateY(-4px);
+  max-height: 0;
+  overflow: hidden;
+}
+
+/* Collapsed chips (single row scroll) */
+.chips-collapsed {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  opacity: 0;
+  transform: translateY(4px);
+  max-height: 0;
+  transition:
+    opacity var(--dur-chips) var(--ease-chips) calc(40ms + var(--stagger-chips)),
+    transform var(--dur-chips) var(--ease-chips) calc(40ms + var(--stagger-chips)),
+    max-height var(--dur-chips) var(--ease-chips) calc(40ms + var(--stagger-chips));
+  pointer-events: none;
+}
+.chips-collapsed::-webkit-scrollbar { display: none; }
+.site-header.scrolled .chips-collapsed {
+  opacity: 1;
+  transform: translateY(0px);
+  max-height: 48px;
+  pointer-events: auto;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.chip-active {
+  background: var(--teal-chip);
+  color: #0A6E68;
+  border-color: transparent;
+}
+.chip-active:hover { background: #B2E8E3; }
+.chip-inactive {
+  background: #fff;
+  color: var(--ink2);
+  border-color: var(--chip-border);
+}
+.chip-inactive:hover { border-color: #aaa; background: var(--bg); }
+.chip-add {
+  background: #fff;
+  color: var(--subdued);
+  border-color: var(--chip-border);
+  border-style: dashed;
+}
+
+/* ── GRADIENT FADE EDGE on chips-collapsed ──── */
+.chips-collapsed-wrap {
+  position: relative;
+}
+.chips-collapsed-wrap::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 40px;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.9));
+  pointer-events: none;
+}
+
+/* Chip section padding collapse */
+.chip-section {
+  padding-top: 10px;
+  padding-bottom: 12px;
+  transition: padding var(--dur-collapse) var(--ease-collapse);
+}
+.site-header.scrolled .chip-section {
+  padding-top: 6px;
+  padding-bottom: 10px;
+}
+
+/* ── PAGE CONTENT ─────────────────────────────── */
+.page-content { padding: 0 24px 40px; background: var(--bg); }
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  font-size: 12px;
+  color: var(--subdued);
+}
+.breadcrumb a { color: var(--subdued); text-decoration: none; }
+.breadcrumb a:hover { color: var(--teal); }
+.breadcrumb-sep { font-size: 10px; color: #ccc; }
+
+.results-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 8px;
+}
+.results-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.results-num {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #3B82F6, var(--teal));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ai-star { font-size: 13px; }
+.results-desc {
+  font-size: 11px;
+  color: var(--subdued);
+  margin-bottom: 12px;
+}
+.save-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--subdued);
+}
+.toggle {
+  width: 36px; height: 20px;
+  background: #ddd;
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-knob {
+  width: 16px; height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px; left: 2px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+
+/* ── CARD GRID ────────────────────────────────── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+}
+.card-img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  display: block;
+}
+
+/* SVG car placeholder */
+.card-img-placeholder {
+  width: 100%;
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-body { padding: 10px 12px 12px; }
+.card-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.card-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.card-like {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--subdued);
+}
+.heart { font-size: 13px; }
+.card-title {
+  font-size: 12px;
+  color: var(--ink2);
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+.card-seller {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.seller-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.seller-avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+}
+.seller-name { font-size: 11px; color: var(--subdued); }
+.seller-time { font-size: 10px; color: #BBB; }
+.chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--ink2);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  background: #fff;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.15s;
+}
+.chat-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+/* ── INLINE EDIT SEARCH BAR ────────────────────── */
+.hero-search-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(5px);
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 250ms cubic-bezier(0.3, 0, 0, 1);
+}
+.hero-search-bar input {
+  flex: 1;
+  height: 30px;
+  background: #fff;
+  border: 1.5px solid var(--teal);
+  border-radius: 7px;
+  padding: 0 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  outline: none;
+  min-width: 0;
+  box-shadow: 0 0 0 3px rgba(29,173,160,.12);
+  transition: box-shadow 0.15s;
+}
+.hero-search-bar input:focus {
+  box-shadow: 0 0 0 4px rgba(29,173,160,.2);
+}
+.hero-search-submit {
+  height: 30px;
+  padding: 0 16px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.hero-search-submit:hover { background: #189990; }
+
+/* Editing state */
+.site-header.editing .hero-search-bar {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.site-header.editing .hero-heading {
+  opacity: 0 !important;
+  transform: translateY(-5px) !important;
+  pointer-events: none !important;
+  transition: opacity 160ms ease, transform 200ms cubic-bezier(0.3,0,0,1) !important;
+}
+.site-header.editing .hero-heading-compact {
+  opacity: 0 !important;
+  transform: translateY(-5px) !important;
+  pointer-events: none !important;
+  transition: opacity 160ms ease, transform 200ms cubic-bezier(0.3,0,0,1) !important;
+}
+.site-header.editing .hero-heading-container {
+  height: 30px !important;
+}
+.site-header.editing .hero-label-row {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+/* ── EDIT TRANSITION VARIANTS ──────────────────────── */
+
+/* V2: Clip Wipe — left-to-right reveal */
+[data-edit="clip"] .hero-search-bar {
+  opacity: 1 !important;
+  transform: none !important;
+  clip-path: inset(0 100% 0 0 round 7px);
+  transition: clip-path 300ms cubic-bezier(0.3,0,0,1) !important;
+}
+[data-edit="clip"].editing .hero-search-bar {
+  clip-path: inset(0 0% 0 0 round 7px);
+}
+
+/* V3: Spring Scale — organic scale overshoot */
+[data-edit="spring"] .hero-search-bar {
+  transform: scale(0.86) translateY(6px) !important;
+  transition:
+    opacity 420ms linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1),
+    transform 520ms linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1) !important;
+}
+[data-edit="spring"].editing .hero-search-bar {
+  transform: scale(1) translateY(0) !important;
+}
+[data-edit="spring"].editing .hero-heading,
+[data-edit="spring"].editing .hero-heading-compact {
+  opacity: 0 !important;
+  transform: scale(1.07) !important;
+  transition: opacity 200ms ease, transform 320ms linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1) !important;
+}
+
+/* V4: Blur Dissolve — cinematic */
+[data-edit="blur"] .hero-heading,
+[data-edit="blur"] .hero-heading-compact {
+  filter: blur(0px);
+  transition:
+    opacity var(--dur-fade) var(--ease-fade) calc(0ms + var(--stagger-heading)),
+    transform var(--dur-collapse) var(--ease-collapse) calc(0ms + var(--stagger-heading)),
+    filter 250ms ease;
+}
+[data-edit="blur"] .hero-search-bar {
+  filter: blur(10px);
+  transform: scale(0.97) !important;
+  transition: opacity 280ms ease, filter 320ms ease, transform 280ms ease !important;
+}
+[data-edit="blur"].editing .hero-search-bar {
+  filter: blur(0px);
+  transform: scale(1) !important;
+}
+[data-edit="blur"].editing .hero-heading,
+[data-edit="blur"].editing .hero-heading-compact {
+  opacity: 0 !important;
+  filter: blur(8px) !important;
+  transform: scale(0.98) !important;
+  transition: opacity 220ms ease, filter 260ms ease, transform 220ms ease !important;
+}
+
+/* ── SCROLL PROGRESS INDICATOR ─────────────────── */
+.scroll-progress {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.scroll-progress.hidden { opacity: 0; }
+.scroll-arrow {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bounce 1.5s ease-in-out infinite;
+}
+.scroll-label-hint {
+  font-size: 10px;
+  color: rgba(255,255,255,.4);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+/* ── STATE INDICATOR ─────────────────────────────── */
+.state-pill {
+  position: absolute;
+  top: 56px;
+  right: 20px;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(8px);
+  border-radius: 100px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #888;
+  pointer-events: none;
+  transition: color 0.3s;
+  z-index: 10;
+}
+.state-pill.active { color: var(--teal); }
+
+</style>
+</head>
+<body>
+
+<!-- ── SIDE PANEL ─────────────────────────────── -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-eyebrow">Carousell · SERP</div>
+    <div class="panel-title">Scroll Header Collapse</div>
+    <div class="panel-sub">4 transition variants — pick one to preview</div>
+  </div>
+
+  <div class="variant-section">
+    <div class="variant-label">Animation Variants</div>
+
+    <button class="variant-btn active" onclick="setVariant(this,'standard')">
+      <div class="v-num">01</div>
+      <div class="v-name">Smooth Standard</div>
+      <div class="v-desc">Google M3 decelerate easing. Rapid start, extended brake. Clean and professional.</div>
+    </button>
+
+    <button class="variant-btn" onclick="setVariant(this,'spring')">
+      <div class="v-num">02</div>
+      <div class="v-name">Apple Fluid Spring</div>
+      <div class="v-desc">Spring-curve easing via linear(). Organic settle — feels native, alive, physical.</div>
+    </button>
+
+    <button class="variant-btn" onclick="setVariant(this,'stagger')">
+      <div class="v-num">03</div>
+      <div class="v-name">Linear Stagger</div>
+      <div class="v-desc">50ms stagger cascade: label → heading → chips. Guides the eye, feels intentional.</div>
+    </button>
+
+    <button class="variant-btn" onclick="setVariant(this,'snappy')">
+      <div class="v-num">04</div>
+      <div class="v-name">Snappy Bounce</div>
+      <div class="v-desc">Bouncy overshoot (0.3, 0, 0, 1.25). Playful, energetic — matches the Carousell brand.</div>
+    </button>
+  </div>
+
+  <!-- Motion spec readout -->
+  <div class="spec-box" id="spec-box">
+    <div class="spec-label">Motion Spec</div>
+    <div class="spec-row"><span class="spec-key">Duration</span><span class="spec-val" id="spec-dur">320ms</span></div>
+    <div class="spec-row"><span class="spec-key">Easing</span><span class="spec-val" id="spec-ease">cubic-bezier(0.3,0,0,1)</span></div>
+    <div class="spec-row"><span class="spec-key">Stagger</span><span class="spec-val" id="spec-stagger">none</span></div>
+    <div class="spec-row"><span class="spec-key">Scroll trigger</span><span class="spec-val">60px</span></div>
+  </div>
+
+  <div class="hint-box">
+    <strong>Scroll inside the browser</strong> to trigger the header collapse. Click any variant to switch animations in realtime.
+  </div>
+
+  <div class="variant-section" style="border-top: 1px solid #252525;">
+    <div class="variant-label">Edit Transition</div>
+
+    <button class="variant-btn edit-v-btn active" onclick="setEditVariant(this,'fade')">
+      <div class="v-num">A</div>
+      <div class="v-name">Fade Slide</div>
+      <div class="v-desc">Opacity + slide up. Minimal and universal — works in all states.</div>
+    </button>
+
+    <button class="variant-btn edit-v-btn" onclick="setEditVariant(this,'clip')">
+      <div class="v-num">B</div>
+      <div class="v-name">Clip Wipe</div>
+      <div class="v-desc">Search bar wipes in left-to-right. Sharp and purposeful.</div>
+    </button>
+
+    <button class="variant-btn edit-v-btn" onclick="setEditVariant(this,'spring')">
+      <div class="v-num">C</div>
+      <div class="v-name">Spring Scale</div>
+      <div class="v-desc">Scales in with organic spring overshoot. Tactile, native-app feel.</div>
+    </button>
+
+    <button class="variant-btn edit-v-btn" onclick="setEditVariant(this,'blur')">
+      <div class="v-num">D</div>
+      <div class="v-name">Blur Dissolve</div>
+      <div class="v-desc">Text blurs out, search bar dissolves in. Cinematic and premium.</div>
+    </button>
+  </div>
+
+  <div class="hint-box" style="margin-top:0">
+    <strong>Click ✎</strong> on the heading to open the search bar. Click Search or press Enter/Esc to close.
+  </div>
+</div>
+
+<!-- ── STAGE ──────────────────────────────────── -->
+<div class="stage">
+
+  <!-- State pill overlay -->
+  <div class="state-pill" id="statePill">EXPANDED</div>
+
+  <div class="browser">
+    <!-- Browser chrome -->
+    <div class="browser-bar">
+      <div class="browser-dots">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+      </div>
+      <div class="browser-url">
+        <span class="url-lock">🔒</span>
+        <span>carousell.sg/cars/used-cars?q=asian+suv&budget=30000&coe=5y</span>
+      </div>
+    </div>
+
+    <!-- Scrollable page -->
+    <div class="page-wrap" id="pageWrap">
+
+      <!-- Sticky site header -->
+      <div class="site-header" id="siteHeader" data-edit="fade">
+
+        <!-- Global nav -->
+        <div class="global-nav">
+          <a class="logo" href="#">
+            <div class="logo-icon">C</div>
+          </a>
+          <div class="nav-links">
+            <a class="nav-link" href="#">Electronics</a>
+            <a class="nav-link" href="#">Fashion</a>
+            <a class="nav-link" href="#">Luxury</a>
+            <a class="nav-link" href="#">Services</a>
+            <a class="nav-link" href="#" style="font-weight:600;color:var(--ink)">Cars</a>
+            <a class="nav-link" href="#">Property</a>
+            <a class="nav-link" href="#">
+              <span style="font-size:11px">⊞</span> All categories
+            </a>
+          </div>
+          <div class="nav-actions">
+            <button class="btn-ghost">Register</button>
+            <button class="btn-ghost">Login</button>
+            <button class="btn-sell">Sell</button>
+          </div>
+        </div>
+
+        <!-- Search hero -->
+        <div class="search-hero">
+
+          <!-- "Tell us your ideal ride" label — collapses out -->
+          <div class="hero-label-row">
+            <div class="sparkle-icon">✦</div>
+            <span class="hero-label-text">Tell us your ideal ride</span>
+          </div>
+
+          <!-- Heading container (cross-fades between expanded & compact) -->
+          <div class="hero-heading-container">
+            <!-- Expanded heading -->
+            <div class="hero-heading">
+              I'm looking for a Asian SUV below 30K, 5+ year of COE with
+              <span class="highlight">high performance</span>
+              <span class="edit-icon">✎</span>
+            </div>
+            <!-- Compact heading (appears on scroll) -->
+            <div class="hero-heading-compact" id="heroCompact">
+              I'm looking for a Asian SUV below 30K with
+              <span class="highlight">high performance</span>
+              <span class="edit-icon" id="editIconCompact" style="pointer-events:auto">✎</span>
+            </div>
+
+            <!-- Inline search bar (appears on edit) -->
+            <div class="hero-search-bar" id="heroSearchBar">
+              <input id="heroSearchInput" type="text"
+                value="I'm looking for a Asian SUV below 30K with high performance">
+              <button class="hero-search-submit" id="heroSearchSubmit">Search</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Chip section -->
+        <div class="chip-section">
+
+          <!-- Expanded chips (multi-line) -->
+          <div class="chips-expanded">
+            <span class="chip chip-active">Family-friendly</span>
+            <span class="chip chip-active">Asian</span>
+            <span class="chip chip-active">SUV</span>
+            <span class="chip chip-active">Below $30,000</span>
+            <span class="chip chip-inactive">5 seaters</span>
+            <span class="chip chip-inactive">Performance</span>
+            <span class="chip chip-inactive">&lt;2 owners</span>
+            <span class="chip chip-inactive">&lt; 4,400km/yr</span>
+            <span class="chip chip-inactive">Continental</span>
+            <span class="chip chip-add">Add +</span>
+          </div>
+
+          <!-- Collapsed chips (single scroll row) -->
+          <div class="chips-collapsed-wrap">
+            <div class="chips-collapsed">
+              <span class="chip chip-add" style="border-style:solid">Add +</span>
+              <span class="chip chip-active">Family-friendly</span>
+              <span class="chip chip-active">Asian</span>
+              <span class="chip chip-active">SUV</span>
+              <span class="chip chip-active">Below $30,000</span>
+              <span class="chip chip-inactive">5 seaters</span>
+              <span class="chip chip-inactive">Performance</span>
+              <span class="chip chip-inactive">&lt;2 owners</span>
+              <span class="chip chip-inactive">&lt; 4,400km/yr</span>
+              <span class="chip chip-inactive">Continental</span>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /site-header -->
+
+      <!-- Page content (scrollable body) -->
+      <div class="page-content">
+
+        <div class="breadcrumb">
+          <a href="#">Home</a>
+          <span class="breadcrumb-sep">›</span>
+          <a href="#">Cars</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>Used cars</span>
+        </div>
+
+        <div class="results-bar">
+          <div class="results-count">
+            <span class="results-num">850 search results found by AI</span>
+            <span class="ai-badge"><span class="ai-star">✦</span></span>
+          </div>
+          <div class="save-search">
+            Save this search
+            <div class="toggle"><div class="toggle-knob"></div></div>
+            <span style="font-size:14px;color:#bbb">⚙</span>
+          </div>
+        </div>
+        <div class="results-desc">Compact SUV. Reliable, spacious family friendly SUV with high performance</div>
+
+        <!-- Card grid -->
+        <div class="card-grid" id="cardGrid">
+          <!-- Cards injected by JS -->
+        </div>
+
+      </div>
+    </div><!-- /page-wrap -->
+
+    <!-- Scroll hint -->
+    <div class="scroll-progress" id="scrollHint">
+      <div class="scroll-arrow">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M6 2L6 10M6 10L2 6M6 10L10 6" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="scroll-label-hint">scroll to collapse</span>
+    </div>
+  </div><!-- /browser -->
+</div><!-- /stage -->
+
+<script>
+/* ── CAR DATA ─────────────────────────────────── */
+const cars = [
+  { price:'S$43,888', likes:12, title:'Honda Jazz 1.5 VTIR CVT ABS Dsss', seller:'Landrover SG', time:'2h ago', color:'#C4C4C4', gradient:'linear-gradient(135deg,#B8B8B8,#D0D0D0)' },
+  { price:'S$38,500', likes:8,  title:'Toyota RAV4 2.0 CVT Sunroof 7-seater', seller:'AutoPrime', time:'3h ago', color:'#4A6FA5', gradient:'linear-gradient(135deg,#3A5F95,#6A8FC5)' },
+  { price:'S$29,800', likes:24, title:'Honda CR-V 2.0 i-VTEC Executive', seller:'SG Motors', time:'5h ago', color:'#E8E0D0', gradient:'linear-gradient(135deg,#D8D0C0,#F0E8D8)' },
+  { price:'S$35,200', likes:6,  title:'Mazda CX-5 2.0 Skyactiv-G 2WD', seller:'Mazda Direct', time:'1d ago', color:'#C0392B', gradient:'linear-gradient(135deg,#A0291B,#E0493B)' },
+  { price:'S$31,500', likes:15, title:'Subaru Forester 2.0i-L EyeSight', seller:'SubaruSG', time:'1d ago', color:'#2C3E50', gradient:'linear-gradient(135deg,#1C2E40,#3C4E60)' },
+  { price:'S$27,900', likes:19, title:'Mitsubishi ASX 2.0 CVT 5-seater', seller:'MitsuDirect', time:'2d ago', color:'#8E8E8E', gradient:'linear-gradient(135deg,#7E7E7E,#AEAEAE)' },
+  { price:'S$41,200', likes:3,  title:'Hyundai Tucson 2.0 Premium AT', seller:'HyundaiPrime', time:'2d ago', color:'#27AE60', gradient:'linear-gradient(135deg,#179050,#37CE70)' },
+  { price:'S$33,400', likes:11, title:'Kia Sportage 1.6 T-GDI GT-Line', seller:'KiaSG', time:'3d ago', color:'#E67E22', gradient:'linear-gradient(135deg,#C66E12,#F68E32)' },
+  { price:'S$26,500', likes:22, title:'Honda Vezel 1.5 Hybrid X', seller:'HondaDirect', time:'4d ago', color:'#C0C0C0', gradient:'linear-gradient(135deg,#B0B0B0,#D8D8D8)' },
+];
+
+function buildCards() {
+  const grid = document.getElementById('cardGrid');
+  cars.forEach(c => {
+    const initials = c.seller.split(' ').map(w=>w[0]).join('').slice(0,2);
+    grid.innerHTML += `
+      <div class="card">
+        <div class="card-img-placeholder" style="background:${c.gradient}">
+          <!-- Simple car silhouette SVG -->
+          <svg viewBox="0 0 200 120" width="80%" fill="none" opacity="0.25">
+            <ellipse cx="100" cy="88" rx="88" ry="10" fill="#000"/>
+            <rect x="18" y="60" width="164" height="30" rx="8" fill="#fff"/>
+            <path d="M50 60 C55 40 75 28 100 28 C125 28 145 40 150 60Z" fill="#fff"/>
+            <circle cx="45" cy="90" r="14" fill="#333"/>
+            <circle cx="45" cy="90" r="7" fill="#666"/>
+            <circle cx="155" cy="90" r="14" fill="#333"/>
+            <circle cx="155" cy="90" r="7" fill="#666"/>
+            <rect x="52" y="32" width="38" height="26" rx="4" fill="rgba(100,200,255,0.4)"/>
+            <rect x="95" y="32" width="38" height="26" rx="4" fill="rgba(100,200,255,0.4)"/>
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="card-price-row">
+            <span class="card-price">${c.price}</span>
+            <span class="card-like"><span class="heart">♡</span>${c.likes}</span>
+          </div>
+          <div class="card-title">${c.title}</div>
+          <div class="card-seller">
+            <div class="seller-info">
+              <div class="seller-avatar">${initials}</div>
+              <div>
+                <div class="seller-name">${c.seller}</div>
+                <div class="seller-time">${c.time}</div>
+              </div>
+            </div>
+            <button class="chat-btn">💬 Chat</button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+}
+buildCards();
+
+/* ── SCROLL HANDLER ─────────────────────────── */
+const pageWrap = document.getElementById('pageWrap');
+const header   = document.getElementById('siteHeader');
+const scrollHint = document.getElementById('scrollHint');
+const statePill  = document.getElementById('statePill');
+const THRESHOLD  = 60;
+let isScrolled   = false;
+
+pageWrap.addEventListener('scroll', () => {
+  const y = pageWrap.scrollTop;
+  const shouldCollapse = y > THRESHOLD;
+
+  if (shouldCollapse !== isScrolled) {
+    isScrolled = shouldCollapse;
+    header.classList.toggle('scrolled', isScrolled);
+    statePill.textContent = isScrolled ? 'COLLAPSED' : 'EXPANDED';
+    statePill.classList.toggle('active', isScrolled);
+    scrollHint.classList.toggle('hidden', isScrolled);
+  }
+}, { passive: true });
+
+/* ── EDIT VARIANT SWITCHER ───────────────────── */
+function setEditVariant(btn, key) {
+  document.querySelectorAll('.edit-v-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Close edit mode first, then switch variant
+  closeEdit();
+  siteHeader.dataset.edit = key;
+}
+
+/* ── INLINE EDIT INTERACTION ─────────────────── */
+const siteHeader = document.getElementById('siteHeader');
+const heroInput  = document.getElementById('heroSearchInput');
+const heroSubmit = document.getElementById('heroSearchSubmit');
+
+function openEdit() {
+  siteHeader.classList.add('editing');
+  setTimeout(() => heroInput.focus(), 80);
+}
+function closeEdit() {
+  siteHeader.classList.remove('editing');
+}
+
+document.getElementById('editIconCompact').addEventListener('click', openEdit);
+document.querySelector('.edit-icon').addEventListener('click', openEdit);
+heroSubmit.addEventListener('click', closeEdit);
+heroInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') closeEdit();
+  if (e.key === 'Escape') closeEdit();
+});
+
+/* ── VARIANT SWITCHER ────────────────────────── */
+const VARIANTS = {
+  standard: {
+    dur:     '320ms',
+    ease:    'cubic-bezier(0.3, 0, 0, 1)',
+    chipDur: '280ms',
+    chipEase:'cubic-bezier(0.3, 0, 0, 1)',
+    fadeDur: '200ms',
+    fadeEase:'cubic-bezier(0.3, 0, 0, 1)',
+    staggerLabel:   '0ms',
+    staggerHeading: '0ms',
+    staggerChips:   '0ms',
+    specDur:    '320ms',
+    specEase:   'M3 Decelerate',
+    specStagger:'none',
+  },
+  spring: {
+    dur:     '500ms',
+    // Spring approximation via linear()
+    ease:    'linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1)',
+    chipDur: '480ms',
+    chipEase:'linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1)',
+    fadeDur: '300ms',
+    fadeEase:'linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1)',
+    staggerLabel:   '0ms',
+    staggerHeading: '0ms',
+    staggerChips:   '0ms',
+    specDur:    '500ms',
+    specEase:   'Spring (organic settle)',
+    specStagger:'none',
+  },
+  stagger: {
+    dur:     '300ms',
+    ease:    'cubic-bezier(0.3, 0, 0, 1)',
+    chipDur: '280ms',
+    chipEase:'cubic-bezier(0.3, 0, 0, 1)',
+    fadeDur: '200ms',
+    fadeEase:'cubic-bezier(0.3, 0, 0, 1)',
+    staggerLabel:   '0ms',
+    staggerHeading: '60ms',
+    staggerChips:   '120ms',
+    specDur:    '300ms',
+    specEase:   'Standard (0.3, 0, 0, 1)',
+    specStagger:'60ms cascade',
+  },
+  snappy: {
+    dur:     '280ms',
+    ease:    'cubic-bezier(0.3, 0, 0, 1.25)',
+    chipDur: '260ms',
+    chipEase:'cubic-bezier(0.3, 0, 0, 1.25)',
+    fadeDur: '180ms',
+    fadeEase:'cubic-bezier(0.3, 0, 0, 1)',
+    staggerLabel:   '0ms',
+    staggerHeading: '0ms',
+    staggerChips:   '0ms',
+    specDur:    '280ms',
+    specEase:   'Bouncy (0.3, 0, 0, 1.25)',
+    specStagger:'none',
+  },
+};
+
+function setVariant(btn, key) {
+  document.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const v = VARIANTS[key];
+  const root = document.documentElement;
+
+  root.style.setProperty('--dur-collapse',  v.dur);
+  root.style.setProperty('--ease-collapse', v.ease);
+  root.style.setProperty('--dur-chips',     v.chipDur);
+  root.style.setProperty('--ease-chips',    v.chipEase);
+  root.style.setProperty('--dur-fade',      v.fadeDur);
+  root.style.setProperty('--ease-fade',     v.fadeEase);
+  root.style.setProperty('--stagger-label',   v.staggerLabel);
+  root.style.setProperty('--stagger-heading', v.staggerHeading);
+  root.style.setProperty('--stagger-chips',   v.staggerChips);
+
+  // Update spec readout
+  document.getElementById('spec-dur').textContent    = v.specDur;
+  document.getElementById('spec-ease').textContent   = v.specEase;
+  document.getElementById('spec-stagger').textContent = v.specStagger;
+
+  // Re-trigger the transition visually if currently collapsed
+  if (isScrolled) {
+    header.classList.remove('scrolled');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        header.classList.add('scrolled');
+      });
+    });
+  }
+}
+</script>
+</body>
+</html>

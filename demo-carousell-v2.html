@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carousell · SERP V2 · Grey Hero + Sticky Bar</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --teal: #1DADA0;
+  --ink: #111111;
+  --border: #E8E8E8;
+  --spring: linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1);
+  --spring-dur: 420ms;
+  --fade-ease: cubic-bezier(0.3, 0, 0, 1);
+  --fade-in: 240ms;
+  --fade-out: 170ms;
+}
+
+body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; display: flex; overflow: hidden; }
+
+/* ── PANEL ─── */
+.panel { width: 272px; flex-shrink: 0; background: #0C0C0C; border-right: 1px solid #1C1C1C; display: flex; flex-direction: column; overflow-y: auto; height: 100vh; }
+.panel::-webkit-scrollbar { width: 3px; }
+.panel::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 2px; }
+.p-header { padding: 22px 18px 14px; border-bottom: 1px solid #1C1C1C; }
+.p-eyebrow { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #3A3A3A; margin-bottom: 5px; }
+.p-title { font-size: 14px; font-weight: 700; color: #EDEDED; line-height: 1.3; }
+.p-sub { font-size: 10.5px; color: #484848; margin-top: 4px; line-height: 1.5; }
+.p-block { margin: 12px 10px 0; padding: 11px 12px; background: #0F0F0F; border: 1px solid #1C1C1C; border-radius: 10px; }
+.p-block-label { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #343434; margin-bottom: 9px; }
+.p-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 4px 0; border-bottom: 1px solid #181818; gap: 8px; }
+.p-row:last-child { border-bottom: none; }
+.p-key { font-size: 10px; color: #4A4A4A; flex-shrink: 0; white-space: nowrap; }
+.p-val { font-size: 9.5px; color: #777; font-family: 'SF Mono', 'Fira Mono', monospace; text-align: right; word-break: break-all; }
+.p-states { margin: 12px 10px 0; }
+.p-states-label { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #343434; margin-bottom: 7px; }
+.state-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; background: #0F0F0F; border: 1px solid #1C1C1C; margin-bottom: 4px; transition: background 200ms, border-color 200ms; }
+.state-row.on { background: rgba(29,173,160,.07); border-color: rgba(29,173,160,.22); }
+.s-dot { width: 6px; height: 6px; border-radius: 50%; background: #2A2A2A; flex-shrink: 0; transition: background 200ms; }
+.state-row.on .s-dot { background: var(--teal); }
+.s-label { font-size: 10px; color: #4A4A4A; transition: color 200ms; }
+.state-row.on .s-label { color: #3D8F8A; }
+.hint { margin: 12px 10px 16px; padding: 10px 12px; background: rgba(29,173,160,.05); border: 1px solid rgba(29,173,160,.12); border-radius: 8px; font-size: 10px; color: #3A7A75; line-height: 1.55; }
+.hint strong { color: var(--teal); }
+
+/* ── STAGE ─── */
+.stage { flex: 1; display: flex; align-items: center; justify-content: center; background: #141414; position: relative; }
+.state-pill { position: absolute; top: 14px; right: 14px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #fff; padding: 4px 10px; border-radius: 100px; background: rgba(29,173,160,.75); backdrop-filter: blur(6px); pointer-events: none; transition: background 300ms; z-index: 10; }
+.state-pill.s-collapsed { background: rgba(60,60,80,.8); }
+.state-pill.s-sticky { background: rgba(17,17,45,.85); }
+.state-pill.s-editing { background: rgba(80,30,80,.85); }
+
+/* ── BROWSER ─── */
+.browser { width: 740px; height: 572px; background: #fff; border-radius: 12px; box-shadow: 0 40px 100px rgba(0,0,0,.75); display: flex; flex-direction: column; overflow: hidden; }
+.b-chrome { height: 38px; background: #F0F0F0; border-bottom: 1px solid #D8D8D8; display: flex; align-items: center; padding: 0 12px; gap: 10px; flex-shrink: 0; }
+.b-dots { display: flex; gap: 5px; }
+.b-dot { width: 11px; height: 11px; border-radius: 50%; }
+.b-dot.r { background: #FF5F57; } .b-dot.y { background: #FEBC2E; } .b-dot.g { background: #28C840; }
+.b-url { flex: 1; height: 22px; background: #E4E4E4; border-radius: 5px; display: flex; align-items: center; padding: 0 9px; gap: 5px; font-size: 10.5px; color: #666; font-family: 'SF Mono', monospace; }
+
+/* ── PAGE WRAP ─── */
+.page-wrap { flex: 1; overflow-y: auto; overflow-x: hidden; background: #fff; }
+.page-wrap::-webkit-scrollbar { width: 4px; }
+.page-wrap::-webkit-scrollbar-thumb { background: #D8D8D8; border-radius: 2px; }
+
+/* ── PAGE HEADER (sticky container) ─── */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: #fff;
+}
+
+/* ── GLOBAL NAV ─── */
+.g-nav { height: 50px; display: flex; align-items: center; padding: 0 18px; border-bottom: 1px solid var(--border); }
+.logo-mark { width: 30px; height: 30px; background: var(--teal); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 15px; flex-shrink: 0; margin-right: 18px; }
+.nav-cats { display: flex; flex: 1; align-items: center; overflow: hidden; }
+.nav-cats a { font-size: 11.5px; color: #555; text-decoration: none; padding: 0 9px; white-space: nowrap; line-height: 50px; }
+.nav-cats a.cur { color: var(--teal); font-weight: 600; border-bottom: 2px solid var(--teal); }
+.nav-right { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.nav-right a { font-size: 11.5px; color: #555; text-decoration: none; }
+.nav-sell { height: 28px; padding: 0 13px; background: var(--teal); color: #fff; border: none; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+
+/* ── STICKY BAR ─────────────────────────────────
+   Lives inside the sticky page-header.
+   Outer: clips with overflow:hidden, animates height with spring.
+   Inner: always full 52px, holds the actual content.
+   Scroll listener (not IntersectionObserver) drives show/hide
+   — no layout-shift feedback loop possible.
+   ───────────────────────────────────────────── */
+.sb-outer {
+  height: 0;
+  overflow: hidden;
+  transition: height var(--spring-dur) var(--spring);
+}
+.sb-outer.visible { height: 52px; }
+
+.sb-inner {
+  height: 52px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-top: 1px solid var(--border);
+  box-shadow: 0 3px 10px rgba(0,0,0,.06);
+}
+
+/* text state */
+.sb-text {
+  display: flex; align-items: center; gap: 6px;
+  flex: 1; min-width: 0; overflow: hidden;
+  font-size: 13px; font-weight: 600; color: var(--ink);
+  white-space: nowrap; text-overflow: ellipsis;
+  transition: opacity var(--fade-out) ease, transform var(--fade-out) ease;
+}
+.sb-text .hi { color: var(--teal); flex-shrink: 0; }
+.sb-pencil { font-size: 14px; color: #C0C0C0; cursor: pointer; flex-shrink: 0; padding: 3px 5px; border-radius: 5px; line-height: 1; transition: color 150ms, background 150ms; }
+.sb-pencil:hover { color: var(--teal); background: rgba(29,173,160,.09); }
+
+/* search state */
+.sb-search {
+  position: absolute; left: 18px; right: 18px; top: 0; bottom: 0;
+  display: flex; align-items: center; gap: 8px;
+  opacity: 0; transform: translateY(6px); pointer-events: none;
+  transition: opacity var(--fade-in) var(--fade-ease), transform var(--fade-in) var(--fade-ease);
+}
+.sb-search input { flex: 1; height: 32px; border: 1.5px solid var(--teal); border-radius: 8px; padding: 0 11px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: var(--ink); outline: none; min-width: 0; box-shadow: 0 0 0 3px rgba(29,173,160,.1); background: #fff; }
+.sb-btn { height: 32px; padding: 0 15px; background: var(--teal); color: #fff; border: none; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; flex-shrink: 0; }
+
+/* editing state — sticky bar */
+.sb-inner.editing .sb-text { opacity: 0; transform: translateY(-5px); pointer-events: none; }
+.sb-inner.editing .sb-search { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+/* ── HERO (grey inset card) ─── */
+.hero {
+  background: #EEEFF2;
+  margin: 12px 16px 0;
+  border-radius: 14px;
+  padding: 16px;
+  transition:
+    padding var(--spring-dur) var(--spring),
+    margin var(--spring-dur) var(--spring),
+    border-radius var(--spring-dur) var(--spring);
+}
+.hero.collapsed { padding: 10px 16px; margin: 8px 16px 0; }
+
+.hero-label-row { margin-bottom: 8px; overflow: hidden; max-height: 22px; opacity: 1; transition: max-height var(--spring-dur) var(--spring), opacity 150ms ease, margin-bottom var(--spring-dur) var(--spring); }
+.hero.collapsed .hero-label-row { max-height: 0; opacity: 0; margin-bottom: 0; }
+.hero-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #9A9AA8; }
+
+.hero-prompt-row { display: flex; align-items: center; gap: 8px; position: relative; min-height: 30px; }
+.hero-prompt { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.35; transition: font-size var(--spring-dur) var(--spring), opacity var(--fade-out) ease, transform var(--fade-out) ease; }
+.hero.collapsed .hero-prompt { font-size: 13px; }
+.hero-prompt .hi { color: var(--teal); }
+.hero-pencil { font-size: 15px; color: #BBBBBB; cursor: pointer; flex-shrink: 0; padding: 3px 5px; border-radius: 5px; line-height: 1; transition: color 150ms, background 150ms, opacity var(--fade-out) ease; }
+.hero-pencil:hover { color: var(--teal); background: rgba(29,173,160,.09); }
+
+.hero-search-bar { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(7px); pointer-events: none; transition: opacity var(--fade-in) var(--fade-ease), transform var(--fade-in) var(--fade-ease); }
+.hero-search-bar input { flex: 1; height: 32px; border: 1.5px solid var(--teal); border-radius: 8px; padding: 0 11px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: var(--ink); outline: none; min-width: 0; box-shadow: 0 0 0 3px rgba(29,173,160,.1); background: #fff; }
+.hero-search-btn { height: 32px; padding: 0 15px; background: var(--teal); color: #fff; border: none; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; flex-shrink: 0; }
+
+.hero.editing .hero-label-row { max-height: 0; opacity: 0; margin-bottom: 0; }
+.hero.editing .chip-row { max-height: 0; opacity: 0; margin-top: 0; }
+.hero.editing .hero-prompt { opacity: 0; transform: translateY(-5px); pointer-events: none; }
+.hero.editing .hero-pencil { opacity: 0; pointer-events: none; }
+.hero.editing .hero-search-bar { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+.chip-row { display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; margin-top: 12px; max-height: 28px; opacity: 1; transition: max-height var(--spring-dur) var(--spring), opacity 150ms ease, margin-top var(--spring-dur) var(--spring); }
+.hero.collapsed .chip-row { max-height: 0; opacity: 0; margin-top: 0; }
+.chip { height: 25px; padding: 0 11px; border-radius: 100px; display: inline-flex; align-items: center; white-space: nowrap; font-size: 10.5px; font-weight: 600; flex-shrink: 0; background: #E0E1E6; color: #555; }
+.chip.act { background: var(--teal); color: #fff; }
+.chip.add-chip { background: transparent; border: 1.5px dashed #C8C8CE; color: #999; }
+
+/* ── CONTENT ─── */
+.content { background: #fff; padding: 14px 18px 28px; }
+.results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.results-count { font-size: 13px; font-weight: 700; color: var(--ink); }
+.results-count em { color: var(--teal); font-style: normal; }
+.ai-badge { font-size: 9.5px; font-weight: 700; color: var(--teal); background: rgba(29,173,160,.09); border: 1px solid rgba(29,173,160,.18); padding: 2px 7px; border-radius: 100px; margin-left: 6px; }
+.save-row { display: flex; align-items: center; gap: 6px; }
+.save-lbl { font-size: 10px; color: #ABABAB; }
+.tog { width: 30px; height: 16px; background: #E0E0E0; border-radius: 100px; position: relative; cursor: pointer; }
+.tog-k { width: 12px; height: 12px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.ai-summary { font-size: 10.5px; color: #8A8A8A; margin-bottom: 14px; line-height: 1.5; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.card { border-radius: 9px; border: 1px solid #F0F0F0; overflow: hidden; background: #fff; }
+.card-img { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.card-body { padding: 8px 9px 10px; }
+.card-price { font-size: 12.5px; font-weight: 800; color: var(--ink); margin-bottom: 2px; }
+.card-title { font-size: 10px; color: #666; line-height: 1.4; margin-bottom: 6px; }
+.card-foot { display: flex; align-items: center; justify-content: space-between; }
+.card-seller { display: flex; align-items: center; gap: 4px; }
+.av { width: 15px; height: 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 7.5px; font-weight: 700; color: #fff; }
+.av-name { font-size: 9px; color: #B0B0B0; }
+.card-chat { font-size: 9px; color: #C8C8C8; }
+</style>
+</head>
+<body>
+
+<!-- PANEL -->
+<div class="panel">
+  <div class="p-header">
+    <div class="p-eyebrow">Carousell · SERP · Exploration V2</div>
+    <div class="p-title">Grey Hero + Sticky Bar</div>
+    <div class="p-sub">Top section in grey container. Sticky bar springs in below nav when hero exits.</div>
+  </div>
+  <div class="p-block" style="margin-top:14px">
+    <div class="p-block-label">Scroll Collapse</div>
+    <div class="p-row"><span class="p-key">Animation</span><span class="p-val">Apple Fluid Spring</span></div>
+    <div class="p-row"><span class="p-key">Duration</span><span class="p-val">420ms</span></div>
+    <div class="p-row"><span class="p-key">Easing</span><span class="p-val">linear() spring curve</span></div>
+    <div class="p-row"><span class="p-key">Collapse at</span><span class="p-val">50px scroll</span></div>
+  </div>
+  <div class="p-block">
+    <div class="p-block-label">Sticky Bar Reveal</div>
+    <div class="p-row"><span class="p-key">Animation</span><span class="p-val">Apple Fluid Spring</span></div>
+    <div class="p-row"><span class="p-key">Property</span><span class="p-val">height 0 → 52px</span></div>
+    <div class="p-row"><span class="p-key">Trigger</span><span class="p-val">hero.bottom ≤ nav.height</span></div>
+    <div class="p-row"><span class="p-key">Method</span><span class="p-val">scroll listener · getBCR</span></div>
+  </div>
+  <div class="p-block" style="margin-bottom:12px">
+    <div class="p-block-label">Edit Transition</div>
+    <div class="p-row"><span class="p-key">Animation</span><span class="p-val">Fade Slide</span></div>
+    <div class="p-row"><span class="p-key">Open</span><span class="p-val">240ms · cubic-bezier(0.3,0,0,1)</span></div>
+    <div class="p-row"><span class="p-key">Close</span><span class="p-val">170ms · ease</span></div>
+    <div class="p-row"><span class="p-key">Works in</span><span class="p-val">hero + sticky bar</span></div>
+  </div>
+  <div class="p-states">
+    <div class="p-states-label">Current State</div>
+    <div class="state-row on" id="sExpanded"><div class="s-dot"></div><div class="s-label">Hero expanded</div></div>
+    <div class="state-row" id="sCollapsed"><div class="s-dot"></div><div class="s-label">Hero collapsed</div></div>
+    <div class="state-row" id="sSticky"><div class="s-dot"></div><div class="s-label">Sticky bar visible</div></div>
+    <div class="state-row" id="sEditing"><div class="s-dot"></div><div class="s-label">Search bar open</div></div>
+  </div>
+  <div class="hint">
+    <strong>Scroll a little</strong> — grey hero collapses (spring physics).<br><br>
+    <strong>Scroll further</strong> past the hero — sticky bar springs in below the nav.<br><br>
+    <strong>Click ✎</strong> anywhere to fade-slide in the search bar.
+  </div>
+</div>
+
+<!-- STAGE -->
+<div class="stage">
+  <div class="state-pill" id="pill">EXPANDED</div>
+
+  <div class="browser">
+    <div class="b-chrome">
+      <div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div>
+      <div class="b-url">🔒 carousell.sg/cars/used-cars?q=asian+suv&budget=30000</div>
+    </div>
+
+    <div class="page-wrap" id="pageWrap">
+
+      <!-- Sticky page header: nav + sticky bar -->
+      <div class="page-header" id="pageHeader">
+
+        <nav class="g-nav">
+          <div class="logo-mark">C</div>
+          <div class="nav-cats">
+            <a href="#">Electronics</a><a href="#">Fashion</a><a href="#">Luxury</a>
+            <a href="#" class="cur">Cars</a><a href="#">Property</a><a href="#">Services</a>
+          </div>
+          <div class="nav-right">
+            <a href="#">Register</a><a href="#">Login</a>
+            <button class="nav-sell">Sell</button>
+          </div>
+        </nav>
+
+        <!-- Outer clips; inner always 52px -->
+        <div class="sb-outer" id="sbOuter">
+          <div class="sb-inner" id="sbInner">
+            <div class="sb-text">
+              I'm looking for a Asian SUV below 30K with
+              <span class="hi">high performance</span>
+              <span class="sb-pencil" id="sbPencil">✎</span>
+            </div>
+            <div class="sb-search">
+              <input id="sbInput" type="text" value="I'm looking for a Asian SUV below 30K with high performance">
+              <button class="sb-btn" id="sbBtn">Search</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /page-header -->
+
+      <!-- Grey hero section -->
+      <section class="hero" id="hero">
+        <div class="hero-label-row">
+          <div class="hero-label">Tell us your ideal ride</div>
+        </div>
+        <div class="hero-prompt-row">
+          <div class="hero-prompt">
+            I'm looking for a Asian SUV below 30K with <span class="hi">high performance</span>
+          </div>
+          <span class="hero-pencil" id="heroPencil">✎</span>
+          <div class="hero-search-bar">
+            <input id="heroInput" type="text" value="I'm looking for a Asian SUV below 30K with high performance">
+            <button class="hero-search-btn" id="heroSearchBtn">Search</button>
+          </div>
+        </div>
+        <div class="chip-row">
+          <div class="chip act">Family-friendly</div><div class="chip act">Asian</div>
+          <div class="chip act">SUV</div><div class="chip act">Below $30,000</div>
+          <div class="chip">5 seaters</div><div class="chip">Performance</div>
+          <div class="chip add-chip">Add +</div>
+        </div>
+      </section>
+
+      <!-- Content -->
+      <div class="content">
+        <div class="results-header">
+          <div class="results-count"><em>850</em> search results found by AI <span class="ai-badge">✦ AI</span></div>
+          <div class="save-row"><span class="save-lbl">Save this search</span><div class="tog"><div class="tog-k"></div></div></div>
+        </div>
+        <div class="ai-summary">Compact SUV. Reliable, spacious family friendly SUV with high performance.</div>
+        <div class="grid">
+          <div class="card"><div class="card-img" style="background:#E4E8EE">🚗</div><div class="card-body"><div class="card-price">S$43,888 <span style="font-size:9px;color:#CCC">♡ 12</span></div><div class="card-title">Honda Jazz 1.5 VTIR CVT ABS Dsss</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#5B8DEF">L</div><span class="av-name">Landrover SG · 2h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          <div class="card"><div class="card-img" style="background:#2B5FA4">🚙</div><div class="card-body"><div class="card-price">S$38,500 <span style="font-size:9px;color:#CCC">♡ 8</span></div><div class="card-title">Toyota RAV4 2.0 CVT Sunroof 7-seater</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E87B45">A</div><span class="av-name">AutoPrime · 3h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          <div class="card"><div class="card-img" style="background:#CEC5B8">🚕</div><div class="card-body"><div class="card-price">S$29,800 <span style="font-size:9px;color:#CCC">♡ 24</span></div><div class="card-title">Honda CR-V 2.0 I-VTEC Executive</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#828282">S</div><span class="av-name">SG Motors · 5h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          <div class="card"><div class="card-img" style="background:#B0392B">🚗</div><div class="card-body"><div class="card-price">S$35,200 <span style="font-size:9px;color:#CCC">♡ 6</span></div><div class="card-title">Mazda CX-5 2.0 SKYACTIV-G Luxury</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E8439A">M</div><span class="av-name">MaxAuto · 1h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          <div class="card"><div class="card-img" style="background:#5A6D7D">🚙</div><div class="card-body"><div class="card-price">S$31,500 <span style="font-size:9px;color:#CCC">♡ 11</span></div><div class="card-title">Subaru Forester 2.0 CVT EyeSight</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#2ECC71">S</div><span class="av-name">SubaruSG · 4h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          <div class="card"><div class="card-img" style="background:#AAB5B6">🚕</div><div class="card-body"><div class="card-price">S$37,900 <span style="font-size:9px;color:#CCC">♡ 7</span></div><div class="card-title">Nissan X-Trail 2.5 4WD Luxury Pkg</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#9B59B6">N</div><span class="av-name">NissanDirect · 6h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          <div class="card"><div class="card-img" style="background:#EFE4C4">🚗</div><div class="card-body"><div class="card-price">S$28,500 <span style="font-size:9px;color:#CCC">♡ 3</span></div><div class="card-title">Kia Sportage 1.6T AWD Premium</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E74C3C">K</div><span class="av-name">KiaCenter · 2h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          <div class="card"><div class="card-img" style="background:#D0EAD0">🚙</div><div class="card-body"><div class="card-price">S$32,800 <span style="font-size:9px;color:#CCC">♡ 9</span></div><div class="card-title">Hyundai Tucson 1.6T GDi Premium</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#3498DB">H</div><span class="av-name">HyundaiSG · 8h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          <div class="card"><div class="card-img" style="background:#E6D3D3">🚕</div><div class="card-body"><div class="card-price">S$26,900 <span style="font-size:9px;color:#CCC">♡ 5</span></div><div class="card-title">Mitsubishi Outlander 2.4 CVT 7-seat</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E67E22">M</div><span class="av-name">MitsuDirect · 12h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+        </div>
+      </div>
+
+    </div><!-- /page-wrap -->
+  </div><!-- /browser -->
+</div><!-- /stage -->
+
+<script>
+const pageWrap  = document.getElementById('pageWrap');
+const hero      = document.getElementById('hero');
+const sbOuter   = document.getElementById('sbOuter');
+const sbInner   = document.getElementById('sbInner');
+const pill      = document.getElementById('pill');
+
+const sExpanded  = document.getElementById('sExpanded');
+const sCollapsed = document.getElementById('sCollapsed');
+const sSticky    = document.getElementById('sSticky');
+const sEditing   = document.getElementById('sEditing');
+
+const NAV_H = 50; // px — global nav height
+
+let isCollapsed = false;
+let isVisible   = false;
+let isEditing   = false;
+
+/* ── SCROLL: collapse + sticky bar reveal ──
+   Both driven by scroll position — no IntersectionObserver,
+   so height animation on sticky bar causes zero feedback loops. */
+pageWrap.addEventListener('scroll', updateScroll, { passive: true });
+
+function updateScroll() {
+  const y = pageWrap.scrollTop;
+
+  // 1. Collapse hero at 50px
+  const nextCollapsed = y > 50;
+  if (nextCollapsed !== isCollapsed) {
+    isCollapsed = nextCollapsed;
+    hero.classList.toggle('collapsed', isCollapsed);
+  }
+
+  // 2. Reveal sticky bar when hero bottom passes nav bottom.
+  //    getBoundingClientRect is relative to the page-wrap viewport.
+  const heroBCR   = hero.getBoundingClientRect();
+  const wrapBCR   = pageWrap.getBoundingClientRect();
+  // heroBottom relative to the scrollable container viewport
+  const heroBottom = heroBCR.bottom - wrapBCR.top;
+  const nextVisible = heroBottom <= NAV_H;
+
+  if (nextVisible !== isVisible) {
+    isVisible = nextVisible;
+    sbOuter.classList.toggle('visible', isVisible);
+    if (!isVisible && isEditing) closeSbEdit();
+  }
+
+  refreshUI();
+}
+
+/* ── HERO EDIT ── */
+function openHeroEdit() {
+  isEditing = true;
+  hero.classList.add('editing');
+  document.getElementById('heroInput').focus({ preventScroll: true });
+  refreshUI();
+}
+function closeHeroEdit() {
+  isEditing = false;
+  hero.classList.remove('editing');
+  refreshUI();
+}
+document.getElementById('heroPencil').addEventListener('click', openHeroEdit);
+document.getElementById('heroSearchBtn').addEventListener('click', closeHeroEdit);
+document.getElementById('heroInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === 'Escape') closeHeroEdit();
+});
+
+/* ── STICKY BAR EDIT ── */
+function openSbEdit() {
+  isEditing = true;
+  sbInner.classList.add('editing');
+  document.getElementById('sbInput').focus({ preventScroll: true });
+  refreshUI();
+}
+function closeSbEdit() {
+  isEditing = false;
+  sbInner.classList.remove('editing');
+  refreshUI();
+}
+document.getElementById('sbPencil').addEventListener('click', openSbEdit);
+document.getElementById('sbBtn').addEventListener('click', closeSbEdit);
+document.getElementById('sbInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === 'Escape') closeSbEdit();
+});
+
+/* ── STATE UI ── */
+function refreshUI() {
+  sExpanded.classList.toggle('on', !isCollapsed && !isVisible);
+  sCollapsed.classList.toggle('on', isCollapsed && !isVisible);
+  sSticky.classList.toggle('on', isVisible);
+  sEditing.classList.toggle('on', isEditing);
+
+  if (isEditing) {
+    pill.textContent = 'EDITING'; pill.className = 'state-pill s-editing';
+  } else if (isVisible) {
+    pill.textContent = 'STICKY BAR'; pill.className = 'state-pill s-sticky';
+  } else if (isCollapsed) {
+    pill.textContent = 'COLLAPSED'; pill.className = 'state-pill s-collapsed';
+  } else {
+    pill.textContent = 'EXPANDED'; pill.className = 'state-pill';
+  }
+}
+
+refreshUI();
+</script>
+</body>
+</html>

@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carousell · Search → AI SERP Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --teal: #1DADA0;
+  --ink: #111111;
+  --border: #E8E8E8;
+  --spring: linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1);
+  --spring-dur: 420ms;
+  --fade-ease: cubic-bezier(0.3,0,0,1);
+  --fade-in: 240ms;
+  --fade-out: 170ms;
+}
+body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; display: flex; overflow: hidden; }
+
+/* ────────────────────────────────────────────────
+   PANEL
+───────────────────────────────────────────────── */
+.panel { width: 264px; flex-shrink: 0; background: #0C0C0C; border-right: 1px solid #1C1C1C; display: flex; flex-direction: column; overflow-y: auto; height: 100vh; }
+.panel::-webkit-scrollbar { width: 3px; }
+.panel::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 2px; }
+.p-header { padding: 22px 18px 14px; border-bottom: 1px solid #1C1C1C; }
+.p-eyebrow { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #3A3A3A; margin-bottom: 5px; }
+.p-title { font-size: 14px; font-weight: 700; color: #EDEDED; line-height: 1.3; }
+.p-sub { font-size: 10.5px; color: #484848; margin-top: 4px; line-height: 1.5; }
+.p-block { margin: 12px 10px 0; padding: 11px 12px; background: #0F0F0F; border: 1px solid #1C1C1C; border-radius: 10px; }
+.p-block:last-of-type { margin-bottom: 0; }
+.p-block-label { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #343434; margin-bottom: 9px; }
+.p-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 4px 0; border-bottom: 1px solid #181818; gap: 8px; }
+.p-row:last-child { border-bottom: none; }
+.p-key { font-size: 10px; color: #4A4A4A; flex-shrink: 0; white-space: nowrap; }
+.p-val { font-size: 9.5px; color: #777; font-family: 'SF Mono', 'Fira Mono', monospace; text-align: right; word-break: break-all; }
+
+.p-flow { margin: 12px 10px 0; }
+.p-flow-label { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #343434; margin-bottom: 8px; }
+.flow-step { display: flex; align-items: flex-start; gap: 9px; padding: 7px 0; border-bottom: 1px solid #181818; }
+.flow-step:last-child { border-bottom: none; }
+.flow-num { width: 17px; height: 17px; border-radius: 50%; background: #1E1E1E; border: 1px solid #303030; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: #555; flex-shrink: 0; margin-top: 1px; transition: background 250ms, border-color 250ms, color 250ms; }
+.flow-step.on .flow-num { background: rgba(29,173,160,.18); border-color: rgba(29,173,160,.4); color: var(--teal); }
+.flow-text { font-size: 10px; color: #484848; line-height: 1.45; transition: color 250ms; }
+.flow-step.on .flow-text { color: #3D8F8A; }
+
+.hint { margin: 12px 10px 16px; padding: 10px 12px; background: rgba(29,173,160,.05); border: 1px solid rgba(29,173,160,.12); border-radius: 8px; font-size: 10px; color: #3A7A75; line-height: 1.55; }
+.hint strong { color: var(--teal); }
+
+/* ────────────────────────────────────────────────
+   STAGE + BROWSER
+───────────────────────────────────────────────── */
+.stage { flex: 1; display: flex; align-items: center; justify-content: center; background: #141414; position: relative; overflow: hidden; }
+.browser { width: 860px; height: 568px; background: #fff; border-radius: 12px; box-shadow: 0 40px 100px rgba(0,0,0,.75); display: flex; flex-direction: column; overflow: hidden; }
+.b-chrome { height: 38px; background: #F0F0F0; border-bottom: 1px solid #D8D8D8; display: flex; align-items: center; padding: 0 12px; gap: 10px; flex-shrink: 0; }
+.b-dots { display: flex; gap: 5px; }
+.b-dot { width: 11px; height: 11px; border-radius: 50%; }
+.b-dot.r { background: #FF5F57; } .b-dot.y { background: #FEBC2E; } .b-dot.g { background: #28C840; }
+.b-url { flex: 1; height: 22px; background: #E4E4E4; border-radius: 5px; display: flex; align-items: center; padding: 0 9px; gap: 5px; font-size: 10.5px; color: #666; font-family: 'SF Mono', monospace; overflow: hidden; }
+.b-lock { flex-shrink: 0; }
+.b-url-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 200ms ease; }
+
+/* ── VIEWS CONTAINER ── */
+.b-content { flex: 1; position: relative; overflow: hidden; background: #fff; }
+.view { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; background: #fff; transition: opacity 300ms var(--fade-ease), transform 300ms var(--fade-ease); }
+.view::-webkit-scrollbar { width: 4px; }
+.view::-webkit-scrollbar-thumb { background: #D8D8D8; border-radius: 2px; }
+.view.hidden { opacity: 0; pointer-events: none; transform: translateY(16px); }
+.view.exit { opacity: 0; pointer-events: none; transform: translateY(-10px); transition: opacity 200ms ease, transform 200ms ease; }
+
+/* ────────────────────────────────────────────────
+   SHARED NAV (used in all views)
+───────────────────────────────────────────────── */
+.g-nav { height: 50px; display: flex; align-items: center; padding: 0 18px; border-bottom: 1px solid var(--border); gap: 0; flex-shrink: 0; }
+.logo-mark { width: 30px; height: 30px; background: var(--teal); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 15px; flex-shrink: 0; margin-right: 18px; }
+.nav-cats { display: flex; flex: 1; align-items: center; overflow: hidden; }
+.nav-cats a { font-size: 11.5px; color: #555; text-decoration: none; padding: 0 9px; white-space: nowrap; }
+.nav-cats a.cur { color: var(--teal); font-weight: 600; }
+.nav-right { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.nav-right a { font-size: 11.5px; color: #555; text-decoration: none; }
+.nav-sell { height: 28px; padding: 0 13px; background: var(--teal); color: #fff; border: none; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+
+/* ────────────────────────────────────────────────
+   VIEW 1 — REGULAR SERP
+───────────────────────────────────────────────── */
+#viewRegular { display: flex; flex-direction: column; }
+
+/* Search bar row */
+.r-search-row { padding: 10px 18px; border-bottom: 1px solid var(--border); position: relative; z-index: 100; flex-shrink: 0; }
+.r-search-wrap { display: flex; border: 1.5px solid #CCCCCC; border-radius: 8px; overflow: visible; transition: border-color 200ms, box-shadow 200ms; position: relative; }
+.r-search-wrap:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(29,173,160,.1); }
+.r-search-left { flex: 1; display: flex; align-items: center; padding: 0 12px; gap: 8px; min-width: 0; }
+.r-search-icon { color: #B8B8B8; font-size: 13px; flex-shrink: 0; }
+.r-search-input { flex: 1; height: 42px; border: none; outline: none; font-family: 'Inter', sans-serif; font-size: 13.5px; font-weight: 500; color: var(--ink); background: transparent; }
+.r-search-input::placeholder { color: #BBBBBB; }
+.r-clear-btn { font-size: 17px; color: #C0C0C0; cursor: pointer; flex-shrink: 0; padding: 2px 6px; border-radius: 4px; line-height: 1; display: none; background: none; border: none; }
+.r-search-wrap.has-text .r-clear-btn { display: block; }
+.r-divider { width: 1px; background: #E4E4E4; height: 24px; flex-shrink: 0; align-self: center; }
+.r-location { display: flex; align-items: center; gap: 6px; padding: 0 14px; font-size: 12.5px; color: #888; white-space: nowrap; flex-shrink: 0; }
+.r-location-icon { color: #C0C0C0; font-size: 13px; }
+.r-search-btn { height: 46px; padding: 0 22px; background: var(--teal); color: #fff; border: none; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 0 6px 6px 0; flex-shrink: 0; margin: -1px -1px -1px 0; }
+
+/* ── Dropdown ── */
+.dropdown { position: absolute; top: calc(100% - 1px); left: 18px; right: 18px; background: #fff; border: 1px solid #E0E0E0; border-top: none; border-radius: 0 0 12px 12px; box-shadow: 0 16px 48px rgba(0,0,0,.14); z-index: 300; display: flex; overflow: hidden; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity 180ms ease, transform 180ms var(--fade-ease); }
+.dropdown.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+.dd-left { flex: 1; padding: 6px 0; border-right: 1px solid var(--border); }
+.dd-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; cursor: pointer; transition: background 100ms; }
+.dd-item:hover { background: #F5F5F5; }
+.dd-item-icon { color: #C8C8C8; font-size: 13px; flex-shrink: 0; }
+.dd-item-body { flex: 1; min-width: 0; }
+.dd-item-main { font-size: 12.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dd-item-main strong { font-weight: 700; }
+.dd-item-sub { font-size: 10.5px; color: #ABABAB; margin-top: 1px; }
+.dd-separator { height: 1px; background: var(--border); margin: 5px 0; }
+
+.dd-right { width: 270px; flex-shrink: 0; padding: 14px 14px 16px; background: #F9FAFB; }
+.dd-ai-label { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.dd-ai-spark { font-size: 14px; }
+.dd-ai-title-btn { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border: 1.5px solid var(--teal); border-radius: 100px; background: transparent; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; color: var(--teal); transition: background 150ms; white-space: nowrap; }
+.dd-ai-title-btn:hover { background: rgba(29,173,160,.07); }
+.dd-prompts { display: flex; flex-direction: column; gap: 2px; }
+.dd-prompt { display: flex; align-items: flex-start; gap: 8px; padding: 8px 8px; border-radius: 7px; cursor: pointer; transition: background 120ms; }
+.dd-prompt:hover { background: rgba(29,173,160,.08); }
+.dd-prompt-spark { font-size: 12px; color: #7B9FD4; flex-shrink: 0; margin-top: 2px; }
+.dd-prompt-text { font-size: 11.5px; color: #444; line-height: 1.45; font-weight: 500; }
+
+/* ── Regular SERP content ── */
+.r-ads { height: 68px; margin: 10px 18px; border-radius: 8px; background: linear-gradient(120deg,#EDF3FC 0%,#D8E8F8 60%,#C8DCF4 100%); display: flex; align-items: center; justify-content: center; font-size: 10.5px; color: #8FA8C8; letter-spacing: 0.5px; flex-shrink: 0; }
+.r-tabs-row { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 18px; flex-shrink: 0; }
+.r-tab { padding: 9px 14px; font-size: 12.5px; color: #999; cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -1px; transition: color 150ms; }
+.r-tab.act { color: var(--teal); border-bottom-color: var(--teal); font-weight: 600; }
+.r-breadcrumb { font-size: 10.5px; color: #ABABAB; padding: 9px 18px; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.r-crumb-sep { color: #DDD; }
+.r-filters { display: flex; gap: 7px; padding: 8px 18px 10px; overflow-x: auto; flex-shrink: 0; }
+.r-filters::-webkit-scrollbar { display: none; }
+.r-filter-chip { height: 30px; padding: 0 12px; border-radius: 100px; border: 1px solid var(--border); font-size: 11.5px; color: #555; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; background: #fff; }
+.r-filter-chip.act { background: rgba(29,173,160,.08); border-color: var(--teal); color: var(--teal); font-weight: 600; }
+.r-filter-chip .chev { color: #AAA; font-size: 9px; }
+.r-results-bar { display: flex; align-items: center; justify-content: space-between; padding: 4px 18px 10px; flex-shrink: 0; }
+.r-count { font-size: 13px; font-weight: 700; color: var(--ink); }
+.r-save { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: #ABABAB; }
+.r-tog { width: 30px; height: 16px; background: #E4E4E4; border-radius: 100px; position: relative; cursor: pointer; }
+.r-tog-k { width: 12px; height: 12px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.r-page-body { display: flex; gap: 0; padding: 0 18px 28px; }
+.r-listings { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.r-side { width: 120px; flex-shrink: 0; margin-left: 14px; }
+.r-ad-side { background: #F2F4F8; border-radius: 8px; height: 280px; display: flex; align-items: center; justify-content: center; font-size: 9.5px; color: #B0B8C8; writing-mode: vertical-rl; letter-spacing: 1px; }
+
+/* Card (shared) */
+.card { border-radius: 9px; border: 1px solid #F0F0F0; overflow: hidden; background: #fff; }
+.card-img { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.card-body { padding: 8px 9px 10px; }
+.card-price { font-size: 12.5px; font-weight: 800; color: var(--ink); margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; }
+.card-likes { font-size: 9px; color: #DDD; font-weight: 400; }
+.card-title { font-size: 10px; color: #666; line-height: 1.4; margin-bottom: 6px; }
+.card-foot { display: flex; align-items: center; justify-content: space-between; }
+.card-seller { display: flex; align-items: center; gap: 4px; }
+.av { width: 15px; height: 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 7.5px; font-weight: 700; color: #fff; }
+.av-name { font-size: 9px; color: #B0B0B0; }
+.card-chat { font-size: 9px; color: #C8C8C8; }
+
+/* ────────────────────────────────────────────────
+   VIEW 2 — AI SERP (pre-filled prompt)
+   VIEW 3 — AI EMPTY
+   (both share .ai-view structure)
+───────────────────────────────────────────────── */
+.ai-view { display: flex; flex-direction: column; }
+
+/* Sticky page header */
+.ai-page-header { position: sticky; top: 0; z-index: 60; background: #fff; flex-shrink: 0; }
+
+/* Sticky bar */
+.sb-outer { height: 0; overflow: hidden; transition: height var(--spring-dur) var(--spring); }
+.sb-outer.visible { height: 52px; }
+.sb-inner { height: 52px; padding: 0 18px; display: flex; align-items: center; position: relative; border-top: 1px solid var(--border); box-shadow: 0 3px 10px rgba(0,0,0,.06); }
+.sb-text { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; text-overflow: ellipsis; transition: opacity var(--fade-out) ease, transform var(--fade-out) ease; }
+.sb-text .hi { color: var(--teal); flex-shrink: 0; }
+.sb-pencil { font-size: 14px; color: #C0C0C0; cursor: pointer; flex-shrink: 0; padding: 3px 5px; border-radius: 5px; line-height: 1; transition: color 150ms, background 150ms; }
+.sb-pencil:hover { color: var(--teal); background: rgba(29,173,160,.09); }
+.sb-search { position: absolute; left: 18px; right: 18px; top: 0; bottom: 0; display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(6px); pointer-events: none; transition: opacity var(--fade-in) var(--fade-ease), transform var(--fade-in) var(--fade-ease); }
+.sb-search input { flex: 1; height: 32px; border: 1.5px solid var(--teal); border-radius: 8px; padding: 0 11px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: var(--ink); outline: none; min-width: 0; box-shadow: 0 0 0 3px rgba(29,173,160,.1); background: #fff; }
+.sb-btn { height: 32px; padding: 0 15px; background: var(--teal); color: #fff; border: none; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; flex-shrink: 0; }
+.sb-inner.editing .sb-text { opacity: 0; transform: translateY(-5px); pointer-events: none; }
+.sb-inner.editing .sb-search { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+/* Hero card */
+.hero { position: relative; background: #EEEFF2; margin: 12px 16px 0; border-radius: 14px; padding: 16px; transition: padding var(--spring-dur) var(--spring), margin var(--spring-dur) var(--spring), border-radius var(--spring-dur) var(--spring), background var(--spring-dur) var(--spring); flex-shrink: 0; }
+.hero.collapsed { padding: 10px 16px; margin: 8px 16px 0; }
+.hero-label-row { margin-bottom: 8px; overflow: hidden; max-height: 22px; opacity: 1; transition: max-height var(--spring-dur) var(--spring), opacity 150ms ease, margin-bottom var(--spring-dur) var(--spring); }
+.hero.collapsed .hero-label-row { max-height: 0; opacity: 0; margin-bottom: 0; }
+.hero-label { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #9A9AA8; }
+.hero-label-spark { font-size: 12px; }
+.hero-prompt-row { display: flex; align-items: center; gap: 8px; position: relative; min-height: 30px; }
+.hero-prompt { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.35; transition: font-size var(--spring-dur) var(--spring), opacity var(--fade-out) ease, transform var(--fade-out) ease; }
+.hero.collapsed .hero-prompt { font-size: 13px; }
+.hero-prompt .hi { color: var(--teal); }
+.hero-prompt.empty-prompt { color: #BBBBBB; font-style: italic; font-weight: 600; }
+.hero-pencil { font-size: 15px; color: #BBBBBB; cursor: pointer; flex-shrink: 0; padding: 3px 5px; border-radius: 5px; line-height: 1; transition: color 150ms, background 150ms, opacity var(--fade-out) ease; }
+.hero-pencil:hover { color: var(--teal); background: rgba(29,173,160,.09); }
+.hero-search-bar { position: absolute; top: 0; left: 0; right: 0; opacity: 0; transform: translateY(7px); pointer-events: none; transition: opacity var(--fade-in) var(--fade-ease), transform var(--fade-in) var(--fade-ease); }
+.hero.editing .hero-prompt-row { min-height: 44px; }
+
+/* Search bar inner — matches regular SERP style */
+.hsb-wrap { display: flex; align-items: stretch; height: 44px; border: 1.5px solid var(--teal); border-radius: 8px; background: #fff; box-shadow: 0 0 0 3px rgba(29,173,160,.1); overflow: hidden; }
+.hsb-left { flex: 1; display: flex; align-items: center; padding: 0 11px; gap: 8px; min-width: 0; }
+.hsb-icon { color: #B8B8B8; font-size: 13px; flex-shrink: 0; }
+.hsb-input { flex: 1; height: 100%; border: none; outline: none; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: var(--ink); background: transparent; min-width: 0; }
+.hsb-clear { font-size: 18px; color: #C8C8C8; background: none; border: none; cursor: pointer; padding: 0 4px; flex-shrink: 0; line-height: 1; display: none; }
+.hsb-left.has-text .hsb-clear { display: block; }
+.hsb-vdivider { width: 1px; background: #E4E4E4; height: 22px; align-self: center; flex-shrink: 0; }
+.hsb-location { display: flex; align-items: center; gap: 5px; padding: 0 12px; font-size: 11.5px; color: #888; white-space: nowrap; flex-shrink: 0; }
+.hsb-location-icon { color: #C0C0C0; font-size: 12px; }
+.hsb-btn { height: 100%; padding: 0 18px; background: var(--teal); color: #fff; border: none; font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+
+.hero.editing { background: transparent; border-radius: 0; margin: 0; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.hero.editing .hero-label-row { max-height: 0; opacity: 0; margin-bottom: 0; }
+.hero.editing .chip-row { max-height: 0; opacity: 0; margin-top: 0; }
+.hero.editing .hero-prompt { opacity: 0; transform: translateY(-5px); pointer-events: none; }
+.hero.editing .hero-pencil { opacity: 0; pointer-events: none; }
+.hero.editing .hero-search-bar { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.hero-search-bar .hsb-vdivider,
+.hero-search-bar .hsb-location { display: none; }
+.chip-row { display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; margin-top: 12px; max-height: 28px; opacity: 1; transition: max-height var(--spring-dur) var(--spring), opacity 150ms ease, margin-top var(--spring-dur) var(--spring); }
+.hero.collapsed .chip-row { max-height: 0; opacity: 0; margin-top: 0; }
+.chip { height: 25px; padding: 0 11px; border-radius: 100px; display: inline-flex; align-items: center; white-space: nowrap; font-size: 10.5px; font-weight: 600; flex-shrink: 0; background: #E0E1E6; color: #555; }
+.chip.act { background: var(--teal); color: #fff; }
+.chip.add-chip { background: transparent; border: 1.5px dashed #C8C8CE; color: #999; }
+
+/* AI SERP content */
+.ai-content { background: #fff; padding: 14px 18px 28px; flex: 1; }
+.results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.results-count { font-size: 13px; font-weight: 700; color: var(--ink); }
+.results-count em { color: var(--teal); font-style: normal; }
+.ai-badge { font-size: 9.5px; font-weight: 700; color: var(--teal); background: rgba(29,173,160,.09); border: 1px solid rgba(29,173,160,.18); padding: 2px 7px; border-radius: 100px; margin-left: 6px; }
+.save-row { display: flex; align-items: center; gap: 6px; }
+.save-lbl { font-size: 10px; color: #ABABAB; }
+.tog { width: 30px; height: 16px; background: #E0E0E0; border-radius: 100px; position: relative; cursor: pointer; }
+.tog-k { width: 12px; height: 12px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.ai-summary { font-size: 10.5px; color: #8A8A8A; margin-bottom: 14px; line-height: 1.5; }
+.ai-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+/* ────────────────────────────────────────────────
+   EMPTY STATE
+───────────────────────────────────────────────── */
+/* Back arrow + label row */
+.em-hero-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.em-back-btn {
+  width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0;
+  border: 1.5px solid #D8D8D8; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 12px; color: #888; line-height: 1;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.em-back-btn:hover { border-color: var(--teal); color: var(--teal); background: rgba(29,173,160,.07); }
+
+/* Live sentence: placeholder → populated */
+.hero-prompt.empty-prompt { color: #C0C0C0; font-style: italic; font-weight: 600; }
+.hero-prompt.has-content { color: var(--ink); font-style: normal; font-weight: 700; }
+
+/* Chip interactive states in empty hero */
+.em-chip { cursor: pointer; transition: background 150ms, color 150ms, border-color 150ms; }
+
+.em-suggestions { margin: 14px 16px 24px; }
+.em-sugg-label { display: flex; align-items: center; gap: 6px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #ABABAB; margin-bottom: 8px; padding: 0 2px; }
+.em-sugg-list { display: flex; flex-direction: column; gap: 6px; }
+.em-sugg-item { display: flex; align-items: center; gap: 12px; padding: 13px 16px; background: #fff; border-radius: 10px; cursor: pointer; border: 1px solid #ECEDEF; transition: background 150ms, border-color 150ms, box-shadow 150ms; }
+.em-sugg-item:hover { background: #FAFBFF; border-color: rgba(29,173,160,.3); box-shadow: 0 2px 10px rgba(29,173,160,.08); }
+.em-sugg-spark { font-size: 14px; color: #7B9FD4; flex-shrink: 0; }
+.em-sugg-text { flex: 1; font-size: 13px; font-weight: 500; color: var(--ink); line-height: 1.4; }
+.em-sugg-arrow { font-size: 15px; color: #D0D0D0; flex-shrink: 0; transition: color 150ms, transform 150ms; }
+.em-sugg-item:hover .em-sugg-arrow { color: var(--teal); transform: translateX(2px); }
+
+/* ────────────────────────────────────────────────
+   HERO DROPDOWN OVERLAY (edit mode — floats below hero card)
+───────────────────────────────────────────────── */
+.hero-dd {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0; right: 0;
+  z-index: 200;
+  background: #fff;
+  border: 1px solid #E0E0E0;
+  border-radius: 10px;
+  box-shadow: 0 16px 44px rgba(0,0,0,.13);
+  padding: 8px 0 4px;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms var(--fade-ease);
+}
+.hero:not(.editing) .hero-dd { opacity: 0 !important; pointer-events: none !important; transform: translateY(-6px) !important; }
+.hero-dd.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.hero-dd-inner { display: flex; gap: 0; padding: 4px 0 6px; }
+.hero-dd-left { flex: 1; min-width: 0; padding: 0 4px; }
+.hero-dd-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; transition: background 100ms; border-radius: 6px; }
+.hero-dd-item:hover { background: #F5F5F5; }
+.hero-dd-item-icon { color: #C8C8C8; font-size: 12px; flex-shrink: 0; }
+.hero-dd-item-text { font-size: 12px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-dd-sep { height: 1px; background: #EFEFEF; margin: 4px 12px; }
+.hero-dd-right { width: 210px; flex-shrink: 0; border-left: 1px solid #EFEFEF; padding: 4px 12px; transition: opacity 150ms ease; }
+.hero-dd-prompt { display: flex; align-items: flex-start; gap: 8px; padding: 8px 8px; border-radius: 7px; cursor: pointer; transition: background 120ms; }
+.hero-dd-prompt:hover { background: rgba(29,173,160,.08); }
+.hero-dd-p-spark { font-size: 11px; color: #7B9FD4; flex-shrink: 0; margin-top: 2px; }
+.hero-dd-p-text { font-size: 11.5px; font-weight: 500; color: #444; line-height: 1.4; }
+
+/* Semantic mode — full-width AI suggestions, no right column */
+.hero-dd.semantic .hero-dd-right { display: none; }
+.hero-dd.semantic .hero-dd-left { padding: 0 4px; }
+.hero-dd-item.is-ai { white-space: normal; }
+.hero-dd-item.is-ai .hero-dd-item-icon { color: #7B9FD4; font-size: 11px; margin-top: 2px; align-self: flex-start; }
+.hero-dd-item.is-ai .hero-dd-item-text { white-space: normal; font-weight: 500; color: #333; line-height: 1.4; font-size: 12.5px; }
+
+/* AI results fade on in-place update */
+.ai-results-wrap { transition: opacity 160ms ease, transform 160ms ease; }
+.ai-results-wrap.fading { opacity: 0; transform: translateY(5px); }
+.ai-results-wrap.settling { transition: opacity 260ms var(--fade-ease), transform 260ms var(--fade-ease); }
+</style>
+</head>
+<body>
+
+<!-- ────────────────────────────────────────────────
+     PANEL
+───────────────────────────────────────────────── -->
+<div class="panel">
+  <div class="p-header">
+    <div class="p-eyebrow">Carousell · SERP · Exploration</div>
+    <div class="p-title">Search → AI SERP Flow</div>
+    <div class="p-sub">From regular search to AI refinement via dropdown prompt selection.</div>
+  </div>
+
+  <div class="p-block" style="margin-top:14px">
+    <div class="p-block-label">Transitions</div>
+    <div class="p-row"><span class="p-key">Page switch</span><span class="p-val">300ms fade-slide</span></div>
+    <div class="p-row"><span class="p-key">Scroll collapse</span><span class="p-val">Apple Fluid Spring</span></div>
+    <div class="p-row"><span class="p-key">Edit open</span><span class="p-val">Fade Slide 240ms</span></div>
+    <div class="p-row"><span class="p-key">Edit close</span><span class="p-val">170ms ease</span></div>
+  </div>
+
+  <div class="p-flow" style="margin-bottom:4px">
+    <div class="p-flow-label">User Flow</div>
+    <div class="flow-step on" id="fs1">
+      <div class="flow-num">1</div>
+      <div class="flow-text">Regular SERP — type keywords in search bar</div>
+    </div>
+    <div class="flow-step" id="fs2">
+      <div class="flow-num">2</div>
+      <div class="flow-text">Dropdown shows suggestions + "Tell us your ideal ride"</div>
+    </div>
+    <div class="flow-step" id="fs3">
+      <div class="flow-num">3a</div>
+      <div class="flow-text">Click AI prompt → AI SERP with pre-filled query</div>
+    </div>
+    <div class="flow-step" id="fs4">
+      <div class="flow-num">3b</div>
+      <div class="flow-text">Click button → Empty AI page to start fresh</div>
+    </div>
+    <div class="flow-step" id="fs5">
+      <div class="flow-num">4</div>
+      <div class="flow-text">Scroll & edit interactions on AI page</div>
+    </div>
+  </div>
+
+  <div class="hint">
+    <strong>Type</strong> in the search bar to open the dropdown.<br><br>
+    <strong>Click a prompt</strong> under "Tell us your ideal ride" to navigate to AI SERP.<br><br>
+    <strong>Click the button</strong> to open the empty AI page.<br><br>
+    On AI pages — <strong>scroll</strong> to collapse hero, <strong>click ✎</strong> to edit.
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────────────
+     STAGE + BROWSER
+───────────────────────────────────────────────── -->
+<div class="stage">
+  <div class="browser">
+    <div class="b-chrome">
+      <div class="b-dots">
+        <div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div>
+      </div>
+      <div class="b-url">
+        <span class="b-lock">🔒</span>
+        <span class="b-url-text" id="urlText">carousell.sg/cars/used-cars?q=subaru+forester</span>
+      </div>
+    </div>
+
+    <div class="b-content">
+
+      <!-- ── VIEW 1: REGULAR SERP ── -->
+      <div class="view" id="viewRegular">
+        <nav class="g-nav">
+          <div class="logo-mark">C</div>
+          <div class="nav-cats">
+            <a href="#">Electronics</a><a href="#">Fashion</a><a href="#">Luxury</a>
+            <a href="#">Services</a><a href="#" class="cur">Cars</a><a href="#">Property</a>
+          </div>
+          <div class="nav-right">
+            <a href="#">Register</a><a href="#">Login</a>
+            <button class="nav-sell">Sell</button>
+          </div>
+        </nav>
+
+        <!-- Search bar + dropdown -->
+        <div class="r-search-row">
+          <div class="r-search-wrap" id="rSearchWrap">
+            <div class="r-search-left">
+              <span class="r-search-icon">⌕</span>
+              <input class="r-search-input" id="rSearchInput" type="text" value="Subaru forester" autocomplete="off" spellcheck="false">
+              <button class="r-clear-btn" id="rClearBtn">×</button>
+            </div>
+            <div class="r-divider"></div>
+            <div class="r-location">
+              <span class="r-location-icon">⊙</span> All of Singapore
+            </div>
+            <button class="r-search-btn">Search</button>
+          </div>
+
+          <!-- Dropdown -->
+          <div class="dropdown" id="dropdown">
+            <div class="dd-left">
+              <div class="dd-item">
+                <span class="dd-item-icon">⌕</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main"><strong id="ddQ">Subaru forester</strong> in Used cars</div>
+                </div>
+              </div>
+              <div class="dd-item">
+                <span class="dd-item-icon">⌕</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main"><strong id="ddQ2">Subaru forester</strong> in New cars</div>
+                </div>
+              </div>
+              <div class="dd-item">
+                <span class="dd-item-icon">⌕</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main"><strong id="ddQ3">Subaru forester</strong> sj</div>
+                </div>
+              </div>
+              <div class="dd-item">
+                <span class="dd-item-icon">⌕</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main"><strong id="ddQ4">Subaru forester</strong> xt</div>
+                </div>
+              </div>
+              <div class="dd-separator"></div>
+              <div class="dd-item">
+                <span class="dd-item-icon">▦</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main">Compact SUV</div>
+                  <div class="dd-item-sub">Includes Subaru forester and 10+ models</div>
+                </div>
+              </div>
+              <div class="dd-item">
+                <span class="dd-item-icon">▦</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main">Premium compact SUV</div>
+                  <div class="dd-item-sub">Enjoy premium with the price of Subaru forester</div>
+                </div>
+              </div>
+              <div class="dd-separator"></div>
+              <div class="dd-item">
+                <span class="dd-item-icon">◎</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main">Search for user 'Subaru forester' instead</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dd-right">
+              <div class="dd-ai-label">
+                <span class="dd-ai-spark">✦</span>
+                <button class="dd-ai-title-btn" id="ddAiBtn">
+                  <span>✦</span> Tell us your ideal ride
+                </button>
+              </div>
+              <div class="dd-prompts">
+                <div class="dd-prompt" data-prompt="asian-suv">
+                  <span class="dd-prompt-spark">✦</span>
+                  <span class="dd-prompt-text">Asian SUV below 30K, 5+ year of COE</span>
+                </div>
+                <div class="dd-prompt" data-prompt="continental">
+                  <span class="dd-prompt-spark">✦</span>
+                  <span class="dd-prompt-text">Continental coupe, depreciation rate &lt; 4,000/mo</span>
+                </div>
+                <div class="dd-prompt" data-prompt="family">
+                  <span class="dd-prompt-spark">✦</span>
+                  <span class="dd-prompt-text">Family-friendly Sedan with extra bootspace</span>
+                </div>
+              </div>
+            </div>
+          </div><!-- /dropdown -->
+        </div><!-- /r-search-row -->
+
+        <!-- Page body -->
+        <div class="r-ads">Advertisement</div>
+        <div class="r-tabs-row">
+          <div class="r-tab">Carousell Select</div>
+          <div class="r-tab act">All</div>
+        </div>
+        <div class="r-breadcrumb">
+          <a href="#">Home</a><span class="r-crumb-sep">›</span>
+          <a href="#">Cars</a><span class="r-crumb-sep">›</span>
+          <span>Used cars</span>
+        </div>
+        <div class="r-filters">
+          <div class="r-filter-chip act">Used cars <span class="chev">▾</span></div>
+          <div class="r-filter-chip">Sort: Best Match <span class="chev">▾</span></div>
+          <div class="r-filter-chip">Condition <span class="chev">▾</span></div>
+          <div class="r-filter-chip">Model <span class="chev">▾</span></div>
+          <div class="r-filter-chip">More filters ⊞</div>
+        </div>
+        <div class="r-results-bar">
+          <div class="r-count">850 search results for <em>'subaru forester'</em> in Singapore</div>
+          <div class="r-save">Save this search <div class="r-tog"><div class="r-tog-k"></div></div> ⚙</div>
+        </div>
+        <div class="r-page-body">
+          <div class="r-listings">
+            <div class="card"><div class="card-img" style="background:#E4E8EE">🚗</div><div class="card-body"><div class="card-price">S$43,888<span class="card-likes">♡ 12</span></div><div class="card-title">Honda Jazz 1.5 VTIR CVT ABS Dsss</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#5B8DEF">L</div><span class="av-name">Landrover SG · 2h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#2B5FA4">🚙</div><div class="card-body"><div class="card-price">S$38,500<span class="card-likes">♡ 8</span></div><div class="card-title">Toyota RAV4 2.0 CVT Sunroof 7-seater</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E87B45">A</div><span class="av-name">AutoPrime · 3h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#CEC5B8">🚕</div><div class="card-body"><div class="card-price">S$29,800<span class="card-likes">♡ 24</span></div><div class="card-title">Honda CR-V 2.0 I-VTEC Executive</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#828282">S</div><span class="av-name">SG Motors · 5h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#B0392B">🚗</div><div class="card-body"><div class="card-price">S$35,200<span class="card-likes">♡ 6</span></div><div class="card-title">Mazda CX-5 2.0 SKYACTIV-G Luxury</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E8439A">M</div><span class="av-name">MaxAuto · 1h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#5A6D7D">🚙</div><div class="card-body"><div class="card-price">S$31,500<span class="card-likes">♡ 11</span></div><div class="card-title">Subaru Forester 2.0 CVT EyeSight</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#2ECC71">S</div><span class="av-name">SubaruSG · 4h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#AAB5B6">🚕</div><div class="card-body"><div class="card-price">S$37,900<span class="card-likes">♡ 7</span></div><div class="card-title">Nissan X-Trail 2.5 4WD Luxury Pkg</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#9B59B6">N</div><span class="av-name">NissanDirect · 6h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          </div>
+          <div class="r-side">
+            <div class="r-ad-side">Advertisement</div>
+          </div>
+        </div>
+      </div><!-- /viewRegular -->
+
+      <!-- ── VIEW 2: AI SERP (pre-filled) ── -->
+      <div class="view ai-view hidden" id="viewAI">
+        <div class="ai-page-header" id="aiPageHeader">
+          <nav class="g-nav">
+            <div class="logo-mark">C</div>
+            <div class="nav-cats">
+              <a href="#">Electronics</a><a href="#">Fashion</a><a href="#">Luxury</a>
+              <a href="#">Services</a><a href="#" class="cur">Cars</a><a href="#">Property</a>
+            </div>
+            <div class="nav-right">
+              <a href="#">Register</a><a href="#">Login</a>
+              <button class="nav-sell">Sell</button>
+            </div>
+          </nav>
+          <div class="sb-outer" id="aiSbOuter">
+            <div class="sb-inner" id="aiSbInner">
+              <div class="sb-text" id="aiSbText">
+                I'm looking for an <span class="hi" id="aiSbHi">Asian SUV below 30K</span>
+                <span class="sb-pencil" id="aiSbPencil">✎</span>
+              </div>
+              <div class="sb-search">
+                <input id="aiSbInput" type="text">
+                <button class="sb-btn" id="aiSbBtn">Search</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="hero" id="aiHero">
+          <div class="hero-label-row">
+            <div class="hero-label"><span class="hero-label-spark">✦</span> Tell us your ideal ride</div>
+          </div>
+          <div class="hero-prompt-row">
+            <div class="hero-prompt" id="aiHeroPrompt">
+              I'm looking for an <span class="hi" id="aiHeroHi">Asian SUV below 30K</span>
+            </div>
+            <span class="hero-pencil" id="aiHeroPencil">✎</span>
+            <div class="hero-search-bar">
+              <div class="hsb-wrap">
+                <div class="hsb-left" id="aiHsbLeft">
+                  <span class="hsb-icon">⌕</span>
+                  <input class="hsb-input" id="aiHeroInput" type="text" autocomplete="off">
+                  <button class="hsb-clear" id="aiHeroClear">×</button>
+                </div>
+                <div class="hsb-vdivider"></div>
+                <div class="hsb-location"><span class="hsb-location-icon">⊙</span> All of Singapore</div>
+                <button class="hsb-btn" id="aiHeroSearchBtn">Search</button>
+              </div>
+            </div>
+          </div>
+          <div class="chip-row" id="aiChipRow">
+            <div class="chip act">Asian</div>
+            <div class="chip act">SUV</div>
+            <div class="chip act">Below $30,000</div>
+            <div class="chip">5yr+ COE</div>
+            <div class="chip">Family-friendly</div>
+            <div class="chip add-chip">Add +</div>
+          </div>
+
+          <!-- inline dropdown — expands hero card while typing -->
+          <div class="hero-dd" id="aiHeroDd">
+            <div class="hero-dd-inner">
+              <div class="hero-dd-left">
+                <div class="hero-dd-item"><span class="hero-dd-item-icon">⌕</span><span class="hero-dd-item-text" id="hdQ1">Asian SUV in Used cars</span></div>
+                <div class="hero-dd-item"><span class="hero-dd-item-icon">⌕</span><span class="hero-dd-item-text" id="hdQ2">Asian SUV in New cars</span></div>
+                <div class="hero-dd-sep"></div>
+                <div class="hero-dd-item"><span class="hero-dd-item-icon">▦</span><span class="hero-dd-item-text">Compact SUV · 10+ models</span></div>
+                <div class="hero-dd-item"><span class="hero-dd-item-icon">▦</span><span class="hero-dd-item-text">Premium compact SUV</span></div>
+              </div>
+              <div class="hero-dd-right">
+                <div class="hero-dd-prompt" data-prompt="asian-suv"><span class="hero-dd-p-spark">✦</span><span class="hero-dd-p-text">Asian SUV below 30K, 5+ year of COE</span></div>
+                <div class="hero-dd-prompt" data-prompt="continental"><span class="hero-dd-p-spark">✦</span><span class="hero-dd-p-text">Continental coupe, depreciation &lt; 4,000/mo</span></div>
+                <div class="hero-dd-prompt" data-prompt="family"><span class="hero-dd-p-spark">✦</span><span class="hero-dd-p-text">Family-friendly Sedan with extra bootspace</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="ai-content">
+          <div class="ai-results-wrap" id="aiResultsWrap">
+          <div class="results-header">
+            <div class="results-count"><em id="aiCount">342</em> search results found by AI <span class="ai-badge">✦ AI</span></div>
+            <div class="save-row"><span class="save-lbl">Save this search</span><div class="tog"><div class="tog-k"></div></div></div>
+          </div>
+          <div class="ai-summary" id="aiSummary">Compact SUV. Reliable, spacious family-friendly SUV with high performance within budget.</div>
+          <div class="ai-grid">
+            <div class="card"><div class="card-img" style="background:#E4E8EE">🚗</div><div class="card-body"><div class="card-price">S$43,888<span class="card-likes">♡ 12</span></div><div class="card-title">Honda Jazz 1.5 VTIR CVT ABS Dsss</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#5B8DEF">L</div><span class="av-name">Landrover SG · 2h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#2B5FA4">🚙</div><div class="card-body"><div class="card-price">S$38,500<span class="card-likes">♡ 8</span></div><div class="card-title">Toyota RAV4 2.0 CVT Sunroof 7-seater</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E87B45">A</div><span class="av-name">AutoPrime · 3h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#CEC5B8">🚕</div><div class="card-body"><div class="card-price">S$29,800<span class="card-likes">♡ 24</span></div><div class="card-title">Honda CR-V 2.0 I-VTEC Executive</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#828282">S</div><span class="av-name">SG Motors · 5h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#B0392B">🚗</div><div class="card-body"><div class="card-price">S$35,200<span class="card-likes">♡ 6</span></div><div class="card-title">Mazda CX-5 2.0 SKYACTIV-G Luxury</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E8439A">M</div><span class="av-name">MaxAuto · 1h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#5A6D7D">🚙</div><div class="card-body"><div class="card-price">S$31,500<span class="card-likes">♡ 11</span></div><div class="card-title">Subaru Forester 2.0 CVT EyeSight</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#2ECC71">S</div><span class="av-name">SubaruSG · 4h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#AAB5B6">🚕</div><div class="card-body"><div class="card-price">S$37,900<span class="card-likes">♡ 7</span></div><div class="card-title">Nissan X-Trail 2.5 4WD Luxury Pkg</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#9B59B6">N</div><span class="av-name">NissanDirect · 6h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          </div>
+          </div><!-- /ai-results-wrap -->
+        </div>
+      </div><!-- /viewAI -->
+
+      <!-- ── VIEW 3: AI EMPTY ── -->
+      <div class="view ai-view hidden" id="viewEmpty">
+        <div class="ai-page-header" id="emPageHeader">
+          <nav class="g-nav">
+            <div class="logo-mark">C</div>
+            <div class="nav-cats">
+              <a href="#">Electronics</a><a href="#">Fashion</a><a href="#">Luxury</a>
+              <a href="#">Services</a><a href="#" class="cur">Cars</a><a href="#">Property</a>
+            </div>
+            <div class="nav-right">
+              <a href="#">Register</a><a href="#">Login</a>
+              <button class="nav-sell">Sell</button>
+            </div>
+          </nav>
+        </div>
+
+        <section class="hero" id="emHero">
+          <!-- Back arrow + label -->
+          <div class="em-hero-top">
+            <button class="em-back-btn" id="emBackBtn">←</button>
+            <div class="hero-label"><span class="hero-label-spark">✦</span> Tell us your ideal ride</div>
+          </div>
+          <!-- Live sentence (no edit icon, no search bar) -->
+          <div class="hero-prompt-row">
+            <div class="hero-prompt empty-prompt" id="emHeroPrompt">I'm looking for ...</div>
+          </div>
+          <!-- Selectable chips -->
+          <div class="chip-row" id="emChipRow">
+            <div class="chip em-chip" data-key="family-friendly">Family-friendly</div>
+            <div class="chip em-chip" data-key="asian">Asian</div>
+            <div class="chip em-chip" data-key="suv">SUV</div>
+            <div class="chip em-chip" data-key="budget-30k">Below $30,000</div>
+            <div class="chip em-chip" data-key="5-seaters">5 seaters</div>
+            <div class="chip em-chip" data-key="performance">Performance</div>
+            <div class="chip add-chip">Add +</div>
+          </div>
+        </section>
+
+        <div class="em-suggestions">
+          <div class="em-sugg-label"><span>✦</span> Suggested for you</div>
+          <div class="em-sugg-list">
+            <div class="em-sugg-item" data-prompt="asian-suv">
+              <span class="em-sugg-spark">✦</span>
+              <span class="em-sugg-text">Asian SUV below 30K, 5+ year of COE</span>
+              <span class="em-sugg-arrow">›</span>
+            </div>
+            <div class="em-sugg-item" data-prompt="continental">
+              <span class="em-sugg-spark">✦</span>
+              <span class="em-sugg-text">Continental coupe, depreciation rate &lt; 4,000/mo</span>
+              <span class="em-sugg-arrow">›</span>
+            </div>
+            <div class="em-sugg-item" data-prompt="family">
+              <span class="em-sugg-spark">✦</span>
+              <span class="em-sugg-text">Family-friendly Sedan with extra bootspace</span>
+              <span class="em-sugg-arrow">›</span>
+            </div>
+          </div>
+        </div>
+      </div><!-- /viewEmpty -->
+
+    </div><!-- /b-content -->
+  </div><!-- /browser -->
+</div><!-- /stage -->
+
+<script>
+/* ────────────────────────────────────────────────
+   PROMPT DATA
+───────────────────────────────────────────────── */
+const PROMPTS = {
+  'asian-suv': {
+    url: 'carousell.sg/cars/ai?q=asian+suv+below+30k+5yr+coe',
+    promptText: "I'm looking for an Asian SUV below 30K with 5+ year of COE",
+    hiText: 'Asian SUV below 30K',
+    sbText: "Asian SUV below 30K, 5+ COE",
+    chips: ['Asian','SUV','Below $30,000','5yr+ COE','Family-friendly'],
+    count: '342',
+    summary: 'Compact SUV. Reliable, spacious family-friendly SUV within budget with remaining COE.',
+  },
+  'continental': {
+    url: 'carousell.sg/cars/ai?q=continental+coupe+depreciation+4000',
+    promptText: "I'm looking for a Continental coupe with depreciation under $4,000/mo",
+    hiText: 'low depreciation Continental coupe',
+    sbText: "Continental coupe, depr < $4K/mo",
+    chips: ['Continental','Coupe','< $4K/mo depr.','Low mileage'],
+    count: '156',
+    summary: 'European coupe. Premium driving experience with manageable depreciation and ownership costs.',
+  },
+  'family': {
+    url: 'carousell.sg/cars/ai?q=family+sedan+bootspace',
+    promptText: "I'm looking for a family-friendly Sedan with extra bootspace",
+    hiText: 'family Sedan with large boot',
+    sbText: "Family Sedan, extra bootspace",
+    chips: ['Family-friendly','Sedan','Large boot','5+ seaters'],
+    count: '287',
+    summary: 'Practical family sedan. Spacious boot, comfortable ride, reliable for daily family use.',
+  }
+};
+
+/* ────────────────────────────────────────────────
+   VIEW MANAGEMENT
+───────────────────────────────────────────────── */
+const urlText      = document.getElementById('urlText');
+const viewRegular  = document.getElementById('viewRegular');
+const viewAI       = document.getElementById('viewAI');
+const viewEmpty    = document.getElementById('viewEmpty');
+const fs1 = document.getElementById('fs1');
+const fs2 = document.getElementById('fs2');
+const fs3 = document.getElementById('fs3');
+const fs4 = document.getElementById('fs4');
+const fs5 = document.getElementById('fs5');
+
+let currentView = 'regular';
+
+function setFlowStep(...active) {
+  [fs1,fs2,fs3,fs4,fs5].forEach(f => f.classList.remove('on'));
+  active.forEach(el => el && el.classList.add('on'));
+}
+
+function switchTo(target, promptKey) {
+  const from = currentView === 'regular' ? viewRegular
+             : currentView === 'ai'      ? viewAI
+             : viewEmpty;
+  currentView = target;
+
+  // Apply prompt data before showing
+  if (target === 'ai' && promptKey) {
+    loadPrompt(promptKey);
+  }
+
+  // Exit current
+  from.classList.add('exit');
+
+  // Reset scroll on incoming
+  const to = target === 'regular' ? viewRegular
+           : target === 'ai'      ? viewAI
+           : viewEmpty;
+  to.scrollTop = 0;
+  resetAIState(to);
+
+  setTimeout(() => {
+    from.classList.remove('exit');
+    from.classList.add('hidden');
+    to.classList.remove('hidden');
+    if (target === 'regular') {
+      urlText.textContent = 'carousell.sg/cars/used-cars?q=subaru+forester';
+      setFlowStep(fs1);
+    }
+  }, 180);
+}
+
+function loadPrompt(key) {
+  const d = PROMPTS[key];
+  if (!d) return;
+  urlText.textContent = d.url;
+
+  // Hero
+  document.getElementById('aiHeroPrompt').innerHTML =
+    "I'm looking for an <span class='hi' id='aiHeroHi'>" + d.hiText + "</span>";
+  const aiInp = document.getElementById('aiHeroInput');
+  aiInp.value = d.promptText;
+  document.getElementById('aiHsbLeft').classList.toggle('has-text', !!d.promptText);
+
+  // Sticky bar
+  document.getElementById('aiSbText').innerHTML =
+    "I'm looking for a <span class='hi'>" + d.sbText + "</span>" +
+    "<span class='sb-pencil' id='aiSbPencil'>✎</span>";
+  document.getElementById('aiSbInput').value = d.promptText;
+
+  // Chips
+  const chipRow = document.getElementById('aiChipRow');
+  chipRow.innerHTML = d.chips.map(c =>
+    `<div class="chip act">${c}</div>`).join('') +
+    `<div class="chip add-chip">Add +</div>`;
+
+  // Results
+  document.getElementById('aiCount').textContent = d.count;
+  document.getElementById('aiSummary').textContent = d.summary;
+
+  // Re-bind pencil (since innerHTML replaced them)
+  bindAIPencils();
+}
+
+/* ────────────────────────────────────────────────
+   DROPDOWN
+───────────────────────────────────────────────── */
+const rSearchInput = document.getElementById('rSearchInput');
+const rSearchWrap  = document.getElementById('rSearchWrap');
+const rClearBtn    = document.getElementById('rClearBtn');
+const dropdown     = document.getElementById('dropdown');
+const ddAiBtn      = document.getElementById('ddAiBtn');
+
+function openDropdown() {
+  dropdown.classList.add('open');
+  setFlowStep(fs1, fs2);
+}
+function closeDropdown() {
+  dropdown.classList.remove('open');
+  if (currentView === 'regular') setFlowStep(fs1);
+}
+
+rSearchInput.addEventListener('focus', () => {
+  if (rSearchInput.value.trim()) openDropdown();
+});
+rSearchInput.addEventListener('input', () => {
+  const v = rSearchInput.value.trim();
+  rSearchWrap.classList.toggle('has-text', !!v);
+  if (v) openDropdown(); else closeDropdown();
+  // Update bold keyword in suggestions
+  ['ddQ','ddQ2','ddQ3','ddQ4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v || 'Subaru forester';
+  });
+});
+rClearBtn.addEventListener('click', () => {
+  rSearchInput.value = '';
+  rSearchWrap.classList.remove('has-text');
+  closeDropdown();
+  rSearchInput.focus();
+});
+
+// Click outside to close
+document.addEventListener('mousedown', e => {
+  if (!dropdown.contains(e.target) && !rSearchWrap.contains(e.target)) {
+    closeDropdown();
+  }
+});
+
+// Prompt clicks
+document.querySelectorAll('.dd-prompt').forEach(el => {
+  el.addEventListener('click', () => {
+    const key = el.dataset.prompt;
+    closeDropdown();
+    setFlowStep(fs3, fs5);
+    switchTo('ai', key);
+  });
+});
+
+// "Tell us your ideal ride" button
+ddAiBtn.addEventListener('click', () => {
+  closeDropdown();
+  setFlowStep(fs4, fs5);
+  switchTo('empty');
+  urlText.textContent = 'carousell.sg/cars/ai?start=fresh';
+});
+
+/* ────────────────────────────────────────────────
+   AI SERP — SCROLL + EDIT
+───────────────────────────────────────────────── */
+const aiHero    = document.getElementById('aiHero');
+const aiSbOuter = document.getElementById('aiSbOuter');
+const aiSbInner = document.getElementById('aiSbInner');
+
+const NAV_H = 50;
+let aiCollapsed = false;
+let aiVisible   = false;
+let aiEditing   = false;
+
+viewAI.addEventListener('scroll', updateAIScroll, { passive: true });
+
+function updateAIScroll() {
+  const y = viewAI.scrollTop;
+  const next = y > 50;
+  if (next !== aiCollapsed) {
+    aiCollapsed = next;
+    aiHero.classList.toggle('collapsed', aiCollapsed);
+  }
+  const heroBCR = aiHero.getBoundingClientRect();
+  const wrapBCR = viewAI.getBoundingClientRect();
+  const heroBottom = heroBCR.bottom - wrapBCR.top;
+  const nextVis = heroBottom <= NAV_H;
+  if (nextVis !== aiVisible) {
+    aiVisible = nextVis;
+    aiSbOuter.classList.toggle('visible', aiVisible);
+    if (!aiVisible && aiEditing) closeAISbEdit();
+  }
+}
+
+function openAIHeroEdit() {
+  aiEditing = true;
+  aiHero.classList.add('editing');
+  document.getElementById('aiHeroInput').focus({ preventScroll: true });
+}
+function closeAIHeroEdit() {
+  aiEditing = false;
+  aiHero.classList.remove('editing');
+}
+function openAISbEdit() {
+  aiEditing = true;
+  aiSbInner.classList.add('editing');
+  document.getElementById('aiSbInput').focus({ preventScroll: true });
+}
+function closeAISbEdit() {
+  aiEditing = false;
+  aiSbInner.classList.remove('editing');
+}
+
+function bindAIPencils() {
+  const hp = document.getElementById('aiHeroPencil');
+  const sp = document.getElementById('aiSbPencil');
+  if (hp) hp.onclick = openAIHeroEdit;
+  if (sp) sp.onclick = openAISbEdit;
+}
+bindAIPencils();
+
+/* ── Hero dropdown ── */
+const aiHeroDd = document.getElementById('aiHeroDd');
+const aiResultsWrap = document.getElementById('aiResultsWrap');
+
+function openHeroDd() { aiHeroDd.classList.add('open'); }
+function closeHeroDd() { aiHeroDd.classList.remove('open'); }
+
+function buildAiSuggestions(q) {
+  const key = matchPromptKey(q);
+  const d = key ? PROMPTS[key] : null;
+  const cap = q.charAt(0).toUpperCase() + q.slice(1);
+  const items = [
+    cap,
+    d ? d.promptText : 'I\'m looking for a ' + q + ' within budget',
+    d ? 'Reliable ' + q.split(' ').slice(0,3).join(' ') + ' for daily use' : q + ' — spacious and fuel-efficient',
+  ];
+  return items.map((text, i) => {
+    const promptKey = i === 1 && key ? key : null;
+    return `<div class="hero-dd-item is-ai" data-ai-prompt="${promptKey || ''}" data-ai-query="${i === 0 || !promptKey ? text : ''}">
+      <span class="hero-dd-item-icon">✦</span>
+      <span class="hero-dd-item-text">${text}</span>
+    </div>`;
+  }).join('');
+}
+
+function buildKeywordSuggestions(q) {
+  return `
+    <div class="hero-dd-item"><span class="hero-dd-item-icon">⌕</span><span class="hero-dd-item-text">${q} in Used cars</span></div>
+    <div class="hero-dd-item"><span class="hero-dd-item-icon">⌕</span><span class="hero-dd-item-text">${q} in New cars</span></div>
+    <div class="hero-dd-sep"></div>
+    <div class="hero-dd-item"><span class="hero-dd-item-icon">▦</span><span class="hero-dd-item-text">Compact SUV · 10+ models</span></div>
+    <div class="hero-dd-item"><span class="hero-dd-item-icon">▦</span><span class="hero-dd-item-text">Premium compact SUV</span></div>`;
+}
+
+function updateHeroDdText(q) {
+  const semantic = isSemanticQuery(q);
+  aiHeroDd.classList.toggle('semantic', semantic);
+  const left = aiHeroDd.querySelector('.hero-dd-left');
+  left.innerHTML = semantic ? buildAiSuggestions(q) : buildKeywordSuggestions(q);
+
+  // Bind click on freshly created AI items
+  left.querySelectorAll('.is-ai').forEach(el => {
+    el.addEventListener('click', () => {
+      closeHeroDd();
+      closeAIHeroEdit();
+      const pk = el.dataset.aiPrompt;
+      const aq = el.dataset.aiQuery;
+      updateResultsInPlace(aq || null, pk || null);
+    });
+  });
+}
+
+/* Semantic vs keyword detection */
+function isSemanticQuery(q) {
+  const words = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const semanticWords = ['looking','want','need','find','below','under','above','with','family','friendly','performance','depreciation','coupe','sedan','suv','coe','spacious','comfortable','reliable','high','low','budget','premium','luxury','affordable','economic','fast','safe','fuel','efficient'];
+  if (words.length >= 4) return true;
+  return words.some(w => semanticWords.includes(w));
+}
+
+function matchPromptKey(q) {
+  const l = q.toLowerCase();
+  if (l.includes('asian') || (l.includes('suv') && (l.includes('30') || l.includes('coe')))) return 'asian-suv';
+  if (l.includes('continental') || l.includes('coupe') || l.includes('depreciation')) return 'continental';
+  if (l.includes('family') || l.includes('sedan') || l.includes('boot')) return 'family';
+  return null;
+}
+
+/* In-place results update */
+function updateResultsInPlace(query, promptKey) {
+  aiResultsWrap.classList.add('fading');
+  setTimeout(() => {
+    if (promptKey) {
+      loadPrompt(promptKey);
+    } else {
+      // Generic semantic update
+      document.getElementById('aiHeroPrompt').innerHTML =
+        "I'm looking for <span class='hi'>" + query + "</span>";
+      document.getElementById('aiCount').textContent = Math.floor(Math.random() * 350 + 80);
+      document.getElementById('aiSummary').textContent = 'AI-curated results based on your refined search criteria.';
+      document.getElementById('aiChipRow').innerHTML =
+        query.split(' ').slice(0,3).map(w => `<div class="chip act">${w}</div>`).join('') +
+        `<div class="chip add-chip">Add +</div>`;
+    }
+    aiResultsWrap.classList.remove('fading');
+    aiResultsWrap.classList.add('settling');
+    setTimeout(() => aiResultsWrap.classList.remove('settling'), 280);
+  }, 160);
+}
+
+/* Search button — semantic → in-place update, keyword → regular SERP */
+document.getElementById('aiHeroSearchBtn').addEventListener('click', function() {
+  const q = document.getElementById('aiHeroInput').value.trim();
+  closeHeroDd();
+  closeAIHeroEdit();
+  if (!q) return;
+  if (isSemanticQuery(q)) {
+    updateResultsInPlace(q, matchPromptKey(q));
+  } else {
+    // Hard keyword — go to regular SERP
+    document.getElementById('rSearchInput').value = q;
+    document.getElementById('rSearchWrap').classList.toggle('has-text', !!q);
+    setFlowStep(fs1);
+    switchTo('regular');
+  }
+});
+
+document.getElementById('aiHeroInput').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeHeroDd(); closeAIHeroEdit(); }
+  if (e.key === 'Enter')  { document.getElementById('aiHeroSearchBtn').click(); }
+});
+document.getElementById('aiHeroInput').addEventListener('input', function() {
+  document.getElementById('aiHsbLeft').classList.toggle('has-text', !!this.value);
+  const v = this.value.trim();
+  if (v) { updateHeroDdText(v); openHeroDd(); }
+  else   { closeHeroDd(); }
+});
+document.getElementById('aiHeroInput').addEventListener('focus', function() {
+  if (this.value.trim()) { updateHeroDdText(this.value.trim()); openHeroDd(); }
+});
+document.getElementById('aiHeroClear').addEventListener('click', function() {
+  const inp = document.getElementById('aiHeroInput');
+  inp.value = ''; inp.focus();
+  document.getElementById('aiHsbLeft').classList.remove('has-text');
+  closeHeroDd();
+});
+
+/* Hero dropdown prompt clicks → in-place update */
+document.querySelectorAll('#aiHeroDd .hero-dd-prompt').forEach(el => {
+  el.addEventListener('click', () => {
+    closeHeroDd();
+    closeAIHeroEdit();
+    updateResultsInPlace(null, el.dataset.prompt);
+  });
+});
+document.getElementById('aiSbBtn').addEventListener('click', closeAISbEdit);
+document.getElementById('aiSbInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === 'Escape') closeAISbEdit();
+});
+
+/* ────────────────────────────────────────────────
+   AI EMPTY — chip selection, sentence builder, navigation
+───────────────────────────────────────────────── */
+const emHero       = document.getElementById('emHero');
+const emHeroPrompt = document.getElementById('emHeroPrompt');
+const emSelChips   = new Set();
+let   emNavigating = false;
+
+const EM_CHIP_PROMPT = {
+  'family-friendly': 'family',
+  'asian':           'asian-suv',
+  'suv':             'asian-suv',
+  'continental':     'continental',
+  'budget-30k':      'asian-suv',  // budget alone → closest prompt
+};
+
+// Build live sentence from selected chips
+function buildEmSentence() {
+  if (emSelChips.size === 0) {
+    emHeroPrompt.innerHTML = "I'm looking for ...";
+    emHeroPrompt.className = 'hero-prompt empty-prompt';
+    return;
+  }
+  const s = emSelChips;
+  let parts = [];
+  let useAn = false;
+
+  if (s.has('asian'))           { parts.push("<span class='hi'>Asian</span>"); useAn = true; }
+  if (s.has('continental'))       parts.push("<span class='hi'>Continental</span>");
+  if (s.has('family-friendly'))   parts.push("<span class='hi'>family-friendly</span>");
+  if (s.has('suv'))               parts.push("<span class='hi'>SUV</span>");
+  if (s.has('5-seaters'))         parts.push("<span class='hi'>5-seater</span>");
+  if (s.has('performance'))       parts.push("<span class='hi'>high-performance</span>");
+  if (s.has('budget-30k'))        parts.push("<span class='hi'>below $30,000</span>");
+
+  const article = useAn ? 'an' : 'a';
+  emHeroPrompt.innerHTML = "I'm looking for " + article + " " + parts.join(' ');
+  emHeroPrompt.className = 'hero-prompt has-content';
+}
+
+// Chips: toggle on/off, update sentence, check for navigation
+document.querySelectorAll('.em-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (emNavigating) return;
+    const key = chip.dataset.key;
+    if (emSelChips.has(key)) {
+      emSelChips.delete(key);
+      chip.classList.remove('act');
+    } else {
+      emSelChips.add(key);
+      chip.classList.add('act');
+    }
+    buildEmSentence();
+    tryEmNavigate();
+  });
+});
+
+// Navigate when a trigger chip is selected
+function tryEmNavigate() {
+  let promptKey = null;
+  for (const key of emSelChips) {
+    if (EM_CHIP_PROMPT[key]) { promptKey = EM_CHIP_PROMPT[key]; break; }
+  }
+  if (!promptKey) return;
+
+  emNavigating = true;
+  setTimeout(() => {
+    setFlowStep(fs3, fs5);
+    switchTo('ai', promptKey);
+    resetEmptyPage();
+  }, 700);
+}
+
+function resetEmptyPage() {
+  emNavigating = false;
+  emSelChips.clear();
+  document.querySelectorAll('.em-chip').forEach(c => c.classList.remove('act'));
+  emHeroPrompt.innerHTML = "I'm looking for ...";
+  emHeroPrompt.className = 'hero-prompt empty-prompt';
+}
+
+// Suggestion rows → navigate to AI SERP
+document.querySelectorAll('.em-sugg-item').forEach(el => {
+  el.addEventListener('click', () => {
+    setFlowStep(fs3, fs5);
+    switchTo('ai', el.dataset.prompt);
+    resetEmptyPage();
+  });
+});
+
+// Back arrow → return to Regular SERP
+document.getElementById('emBackBtn').addEventListener('click', () => {
+  setFlowStep(fs1);
+  switchTo('regular');
+  resetEmptyPage();
+});
+
+/* ────────────────────────────────────────────────
+   RESET AI STATE on view switch
+───────────────────────────────────────────────── */
+function resetAIState(view) {
+  if (view === viewAI) {
+    aiCollapsed = false; aiVisible = false; aiEditing = false;
+    aiHero.classList.remove('collapsed','editing');
+    aiSbOuter.classList.remove('visible');
+    aiSbInner.classList.remove('editing');
+  } else if (view === viewEmpty) {
+    resetEmptyPage();
+  }
+}
+
+/* Init */
+setFlowStep(fs1);
+// Pre-populate search wrap state
+rSearchWrap.classList.toggle('has-text', !!rSearchInput.value.trim());
+</script>
+</body>
+</html>

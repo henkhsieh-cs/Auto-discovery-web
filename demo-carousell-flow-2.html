@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carousell · Search → AI SERP Flow v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & TOKENS ──────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --teal:      #1DADA0;
+  --teal-bg:   #E6F7F6;
+  --teal-chip: #C2EDE9;
+  --ink:       #111111;
+  --ink2:      #333333;
+  --muted:     #717171;
+  --sub:       #9E9E9E;
+  --bg:        #F5F5F5;
+  --card:      #FFFFFF;
+  --border:    #E8E8E8;
+  --chip-b:    #D6D6D6;
+  --sidebar-w: 190px;
+  --spring:    linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1);
+  --fade-ease: cubic-bezier(0.3,0,0,1);
+  --fade-in:   240ms;
+  --fade-out:  170ms;
+}
+
+/* ── SHELL ───────────────────────────────────────── */
+body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; display: flex; overflow: hidden; }
+
+/* ────────────────────────────────────────────────────
+   PANEL
+───────────────────────────────────────────────────── */
+.panel {
+  width: 264px; flex-shrink: 0; background: #0C0C0C;
+  border-right: 1px solid #1C1C1C; display: flex;
+  flex-direction: column; overflow-y: auto; height: 100vh;
+}
+.panel::-webkit-scrollbar { width: 3px; }
+.panel::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 2px; }
+.p-header { padding: 22px 18px 14px; border-bottom: 1px solid #1C1C1C; }
+.p-eyebrow { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #3A3A3A; margin-bottom: 5px; }
+.p-title { font-size: 14px; font-weight: 700; color: #EDEDED; line-height: 1.3; }
+.p-sub { font-size: 10.5px; color: #484848; margin-top: 4px; line-height: 1.5; }
+
+.p-block { margin: 12px 10px 0; padding: 11px 12px; background: #0F0F0F; border: 1px solid #1C1C1C; border-radius: 10px; }
+.p-block-label { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #343434; margin-bottom: 9px; }
+.p-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 4px 0; border-bottom: 1px solid #181818; gap: 8px; }
+.p-row:last-child { border-bottom: none; }
+.p-key { font-size: 10px; color: #4A4A4A; flex-shrink: 0; white-space: nowrap; }
+.p-val { font-size: 9.5px; color: #777; font-family: 'SF Mono','Fira Mono',monospace; text-align: right; word-break: break-all; }
+
+.p-flow { margin: 12px 10px 0; }
+.p-flow-label { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #343434; margin-bottom: 8px; }
+.flow-step { display: flex; align-items: flex-start; gap: 9px; padding: 7px 0; border-bottom: 1px solid #181818; }
+.flow-step:last-child { border-bottom: none; }
+.flow-num {
+  width: 17px; height: 17px; border-radius: 50%;
+  background: #1E1E1E; border: 1px solid #303030;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 700; color: #555; flex-shrink: 0;
+  margin-top: 1px; transition: background 250ms, border-color 250ms, color 250ms;
+}
+.flow-step.on .flow-num { background: rgba(29,173,160,.18); border-color: rgba(29,173,160,.4); color: var(--teal); }
+.flow-text { font-size: 10px; color: #484848; line-height: 1.45; transition: color 250ms; }
+.flow-step.on .flow-text { color: #3D8F8A; }
+
+.hint { margin: 12px 10px 16px; padding: 10px 12px; background: rgba(29,173,160,.05); border: 1px solid rgba(29,173,160,.12); border-radius: 8px; font-size: 10px; color: #3A7A75; line-height: 1.55; }
+.hint strong { color: var(--teal); }
+
+/* ────────────────────────────────────────────────────
+   STAGE + BROWSER
+───────────────────────────────────────────────────── */
+.stage { flex: 1; display: flex; align-items: center; justify-content: center; background: #141414; overflow: hidden; }
+.browser {
+  width: 860px; height: 568px; background: var(--bg);
+  border-radius: 12px; box-shadow: 0 40px 100px rgba(0,0,0,.75);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.b-chrome {
+  height: 38px; background: #F0F0F0; border-bottom: 1px solid #D8D8D8;
+  display: flex; align-items: center; padding: 0 12px; gap: 10px; flex-shrink: 0;
+}
+.b-dots { display: flex; gap: 5px; }
+.b-dot { width: 11px; height: 11px; border-radius: 50%; }
+.b-dot.r { background: #FF5F57; } .b-dot.y { background: #FEBC2E; } .b-dot.g { background: #28C840; }
+.b-url {
+  flex: 1; height: 22px; background: #E4E4E4; border-radius: 5px;
+  display: flex; align-items: center; padding: 0 9px; gap: 5px;
+  font-size: 10.5px; color: #666; font-family: 'SF Mono', monospace; overflow: hidden;
+}
+.b-url-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── VIEWS CONTAINER ─────────────────────────────── */
+.b-content { flex: 1; position: relative; overflow: hidden; background: #fff; display: flex; }
+
+/* Each view is absolutely stacked; transitions handled via JS classes */
+.view {
+  position: absolute; inset: 0; background: #fff;
+  transition: opacity 300ms var(--fade-ease), transform 300ms var(--fade-ease);
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.view.hidden { opacity: 0; pointer-events: none; transform: translateY(16px); }
+.view.exit   { opacity: 0; pointer-events: none; transform: translateY(-10px);
+                transition: opacity 200ms ease, transform 200ms ease; }
+
+/* viewRegular gets its own scroll */
+#viewRegular { overflow-y: auto; overflow-x: hidden; }
+#viewRegular::-webkit-scrollbar { width: 4px; }
+#viewRegular::-webkit-scrollbar-thumb { background: #D8D8D8; border-radius: 2px; }
+
+/* viewEmpty gets its own scroll */
+#viewEmpty { overflow-y: auto; overflow-x: hidden; }
+#viewEmpty::-webkit-scrollbar { width: 4px; }
+#viewEmpty::-webkit-scrollbar-thumb { background: #D8D8D8; border-radius: 2px; }
+
+/* ────────────────────────────────────────────────────
+   SHARED NAV (used in all views)
+───────────────────────────────────────────────────── */
+.g-nav {
+  height: 50px; display: flex; align-items: center;
+  padding: 0 18px; border-bottom: 1px solid var(--border);
+  gap: 0; flex-shrink: 0; background: #fff; position: relative; z-index: 20;
+}
+.logo-mark {
+  width: 30px; height: 30px; background: var(--teal); border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #fff; font-size: 15px; flex-shrink: 0; margin-right: 18px;
+}
+.nav-cats { display: flex; flex: 1; align-items: center; overflow: hidden; }
+.nav-cats a { font-size: 11.5px; color: #555; text-decoration: none; padding: 0 9px; white-space: nowrap; }
+.nav-cats a.cur { color: var(--teal); font-weight: 600; }
+.nav-right { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.nav-right a { font-size: 11.5px; color: #555; text-decoration: none; }
+.nav-sell { height: 28px; padding: 0 13px; background: var(--teal); color: #fff; border: none; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+
+/* ────────────────────────────────────────────────────
+   VIEW 1 — REGULAR SERP (identical to flow.html)
+───────────────────────────────────────────────────── */
+/* Search bar row */
+.r-search-row { padding: 10px 18px; border-bottom: 1px solid var(--border); position: relative; z-index: 100; flex-shrink: 0; }
+.r-search-wrap { display: flex; border: 1.5px solid #CCCCCC; border-radius: 8px; overflow: visible; transition: border-color 200ms, box-shadow 200ms; position: relative; }
+.r-search-wrap:focus-within { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(29,173,160,.1); }
+.r-search-left { flex: 1; display: flex; align-items: center; padding: 0 12px; gap: 8px; min-width: 0; }
+.r-search-icon { color: #B8B8B8; font-size: 13px; flex-shrink: 0; }
+.r-search-input { flex: 1; height: 42px; border: none; outline: none; font-family: 'Inter',sans-serif; font-size: 13.5px; font-weight: 500; color: var(--ink); background: transparent; }
+.r-search-input::placeholder { color: #BBBBBB; }
+.r-clear-btn { font-size: 17px; color: #C0C0C0; cursor: pointer; flex-shrink: 0; padding: 2px 6px; border-radius: 4px; line-height: 1; display: none; background: none; border: none; }
+.r-search-wrap.has-text .r-clear-btn { display: block; }
+.r-divider { width: 1px; background: #E4E4E4; height: 24px; flex-shrink: 0; align-self: center; }
+.r-location { display: flex; align-items: center; gap: 6px; padding: 0 14px; font-size: 12.5px; color: #888; white-space: nowrap; flex-shrink: 0; }
+.r-location-icon { color: #C0C0C0; font-size: 13px; }
+.r-search-btn { height: 46px; padding: 0 22px; background: var(--teal); color: #fff; border: none; font-family: 'Inter',sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; border-radius: 0 6px 6px 0; flex-shrink: 0; margin: -1px -1px -1px 0; }
+
+/* Dropdown (Regular SERP) */
+.dropdown {
+  position: absolute; top: calc(100% - 1px); left: 18px; right: 18px;
+  background: #fff; border: 1px solid #E0E0E0; border-top: none;
+  border-radius: 0 0 12px 12px; box-shadow: 0 16px 48px rgba(0,0,0,.14);
+  z-index: 300; display: flex; overflow: hidden;
+  opacity: 0; transform: translateY(-6px); pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms var(--fade-ease);
+}
+.dropdown.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+.dd-left { flex: 1; padding: 6px 0; border-right: 1px solid var(--border); }
+.dd-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; cursor: pointer; transition: background 100ms; }
+.dd-item:hover { background: #F5F5F5; }
+.dd-item-icon { color: #C8C8C8; font-size: 13px; flex-shrink: 0; }
+.dd-item-body { flex: 1; min-width: 0; }
+.dd-item-main { font-size: 12.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dd-item-main strong { font-weight: 700; }
+.dd-item-sub { font-size: 10.5px; color: #ABABAB; margin-top: 1px; }
+.dd-separator { height: 1px; background: var(--border); margin: 5px 0; }
+
+.dd-right { width: 270px; flex-shrink: 0; padding: 14px 14px 16px; background: #F9FAFB; }
+.dd-ai-label { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.dd-ai-spark { font-size: 14px; }
+.dd-ai-title-btn {
+  display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px;
+  border: 1.5px solid var(--teal); border-radius: 100px; background: transparent;
+  cursor: pointer; font-family: 'Inter',sans-serif; font-size: 11px; font-weight: 700;
+  color: var(--teal); transition: background 150ms; white-space: nowrap;
+}
+.dd-ai-title-btn:hover { background: rgba(29,173,160,.07); }
+.dd-prompts { display: flex; flex-direction: column; gap: 2px; }
+.dd-prompt { display: flex; align-items: flex-start; gap: 8px; padding: 8px 8px; border-radius: 7px; cursor: pointer; transition: background 120ms; }
+.dd-prompt:hover { background: rgba(29,173,160,.08); }
+.dd-prompt-spark { font-size: 12px; color: #7B9FD4; flex-shrink: 0; margin-top: 2px; }
+.dd-prompt-text { font-size: 11.5px; color: #444; line-height: 1.45; font-weight: 500; }
+
+/* Regular SERP page body */
+.r-ads { height: 68px; margin: 10px 18px; border-radius: 8px; background: linear-gradient(120deg,#EDF3FC 0%,#D8E8F8 60%,#C8DCF4 100%); display: flex; align-items: center; justify-content: center; font-size: 10.5px; color: #8FA8C8; letter-spacing: 0.5px; flex-shrink: 0; }
+.r-tabs-row { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 18px; flex-shrink: 0; }
+.r-tab { padding: 9px 14px; font-size: 12.5px; color: #999; cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -1px; transition: color 150ms; }
+.r-tab.act { color: var(--teal); border-bottom-color: var(--teal); font-weight: 600; }
+.r-breadcrumb { font-size: 10.5px; color: #ABABAB; padding: 9px 18px; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.r-crumb-sep { color: #DDD; }
+.r-filters { display: flex; gap: 7px; padding: 8px 18px 10px; overflow-x: auto; flex-shrink: 0; }
+.r-filters::-webkit-scrollbar { display: none; }
+.r-filter-chip { height: 30px; padding: 0 12px; border-radius: 100px; border: 1px solid var(--border); font-size: 11.5px; color: #555; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; background: #fff; }
+.r-filter-chip.act { background: rgba(29,173,160,.08); border-color: var(--teal); color: var(--teal); font-weight: 600; }
+.r-filter-chip .chev { color: #AAA; font-size: 9px; }
+.r-results-bar { display: flex; align-items: center; justify-content: space-between; padding: 4px 18px 10px; flex-shrink: 0; }
+.r-count { font-size: 13px; font-weight: 700; color: var(--ink); }
+.r-save { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: #ABABAB; }
+.r-tog { width: 30px; height: 16px; background: #E4E4E4; border-radius: 100px; position: relative; cursor: pointer; }
+.r-tog-k { width: 12px; height: 12px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.r-page-body { display: flex; gap: 0; padding: 0 18px 28px; }
+.r-listings { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.r-side { width: 120px; flex-shrink: 0; margin-left: 14px; }
+.r-ad-side { background: #F2F4F8; border-radius: 8px; height: 280px; display: flex; align-items: center; justify-content: center; font-size: 9.5px; color: #B0B8C8; writing-mode: vertical-rl; letter-spacing: 1px; }
+
+/* Shared card styles */
+.card { border-radius: 9px; border: 1px solid #F0F0F0; overflow: hidden; background: #fff; cursor: pointer; }
+.card-img { aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.card-body { padding: 8px 9px 10px; }
+.card-price { font-size: 12.5px; font-weight: 800; color: var(--ink); margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; }
+.card-likes { font-size: 9px; color: #DDD; font-weight: 400; }
+.card-title { font-size: 10px; color: #666; line-height: 1.4; margin-bottom: 6px; }
+.card-foot { display: flex; align-items: center; justify-content: space-between; }
+.card-seller { display: flex; align-items: center; gap: 4px; }
+.av { width: 15px; height: 15px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 7.5px; font-weight: 700; color: #fff; }
+.av-name { font-size: 9px; color: #B0B0B0; }
+.card-chat { font-size: 9px; color: #C8C8C8; }
+
+/* ────────────────────────────────────────────────────
+   VIEW 2 — AI SERP (sidebar layout)
+───────────────────────────────────────────────────── */
+/* The viewAI itself is the flex column container */
+#viewAI {
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* Full-page AI layout — fills the view */
+.ai-page {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* Secondary search bar — NS = "new search" bar */
+.ns-container { position: relative; flex-shrink: 0; }
+.ns-bar {
+  display: flex; align-items: center; background: #fff;
+  border-bottom: 1px solid var(--border);
+  padding: 7px 18px; gap: 10px;
+  /* Default hidden state — JS animates this */
+  height: 0; overflow: hidden; opacity: 0; pointer-events: none;
+  flex-shrink: 0;
+  /* NO CSS transition — JS handles all animation */
+}
+.ns-search-inner {
+  flex: 1; display: flex; align-items: center; height: 36px;
+  border: 1.5px solid #CCCCCC; border-radius: 8px;
+  padding: 0 10px; gap: 8px; min-width: 0;
+  transition: border-color 200ms, box-shadow 200ms;
+}
+.ns-search-inner:focus-within {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(29,173,160,.1);
+}
+.ns-icon { color: #B8B8B8; font-size: 13px; flex-shrink: 0; }
+.ns-input {
+  flex: 1; height: 100%; border: none; outline: none;
+  font-family: 'Inter',sans-serif; font-size: 13px; font-weight: 500;
+  color: var(--ink); background: transparent; min-width: 0;
+}
+.ns-clear {
+  font-size: 17px; color: #C0C0C0; cursor: pointer; background: none; border: none;
+  padding: 0 2px; line-height: 1; display: none; flex-shrink: 0;
+}
+.ns-search-inner.has-text .ns-clear { display: block; }
+.ns-search-btn {
+  height: 36px; padding: 0 18px; background: var(--teal); color: #fff;
+  border: none; border-radius: 8px; font-family: 'Inter',sans-serif;
+  font-size: 12.5px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+}
+
+/* NS-bar floating dropdown — appears below nsBar */
+.ns-dd {
+  position: absolute; top: 50px; left: 18px; right: 18px; z-index: 200;
+  background: #fff; border: 1px solid #E0E0E0;
+  border-radius: 0 0 12px 12px; box-shadow: 0 16px 48px rgba(0,0,0,.14);
+  display: flex; overflow: hidden;
+  opacity: 0; transform: translateY(-6px); pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms cubic-bezier(0.3,0,0,1);
+}
+.ns-dd.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+/* When semantic query: hide the right prompts panel */
+.ns-dd.semantic .ns-dd-right { display: none; }
+
+/* NS-dd columns — same structure as dd-left / dd-right */
+.ns-dd-left { flex: 1; padding: 6px 0; border-right: 1px solid var(--border); }
+.ns-dd-right { width: 270px; flex-shrink: 0; padding: 14px 14px 16px; background: #F9FAFB; }
+
+/* AI page body: sidebar + main side-by-side */
+.ai-body {
+  flex: 1; display: flex; overflow: hidden;
+}
+
+/* ── Sidebar ──────────────────────────────────────── */
+.ai-sidebar {
+  width: var(--sidebar-w); background: #fff;
+  border-right: 1px solid var(--border);
+  padding: 14px 14px 20px;
+  flex-shrink: 0; overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column; gap: 14px;
+  min-width: var(--sidebar-w);
+}
+.ai-sidebar::-webkit-scrollbar { display: none; }
+
+.ai-sidebar-top { display: flex; justify-content: flex-end; }
+
+/* Edit button in sidebar */
+.ai-edit-btn {
+  width: 28px; height: 28px; border-radius: 7px;
+  border: 1.5px solid var(--border); background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 13px; color: var(--sub);
+  transition: all .15s;
+}
+.ai-edit-btn:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-bg); }
+
+/* Query text in sidebar */
+.ai-sidebar-query {
+  font-size: 13px; font-weight: 700; color: var(--ink); line-height: 1.4;
+}
+.ai-sidebar-query .hi { color: var(--teal); }
+
+/* Filter section */
+.filter-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--sub); margin-bottom: 8px;
+}
+.ai-chip-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip-on {
+  font-size: 11px; font-weight: 500; padding: 4px 9px;
+  border-radius: 100px; border: 1.5px solid transparent;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  background: var(--teal-chip); color: #0A6E68;
+}
+.chip-off {
+  font-size: 11px; font-weight: 500; padding: 4px 9px;
+  border-radius: 100px; border: 1.5px solid var(--chip-b);
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  background: #fff; color: var(--ink2);
+}
+.chip-add {
+  font-size: 11px; font-weight: 500; padding: 4px 9px;
+  border-radius: 100px; border: 1.5px dashed var(--chip-b);
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  background: #fff; color: var(--sub);
+}
+
+/* Budget chips */
+.ai-bchip-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.bchip {
+  font-size: 11px; font-weight: 500; padding: 4px 9px;
+  border-radius: 100px; border: 1.5px solid var(--chip-b);
+  cursor: pointer; white-space: nowrap;
+  background: #fff; color: var(--ink2);
+}
+.bchip.on { background: var(--teal-chip); color: #0A6E68; border-color: transparent; }
+.bchip-custom { border-style: dashed; color: var(--sub); }
+
+/* ── AI Main ──────────────────────────────────────── */
+.ai-main {
+  flex: 1; overflow-y: auto; padding: 10px 20px 40px; background: #fff;
+}
+.ai-main::-webkit-scrollbar { width: 4px; }
+.ai-main::-webkit-scrollbar-thumb { background: #D8D8D8; border-radius: 2px; }
+
+/* Breadcrumb */
+.ai-breadcrumb { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--sub); padding: 4px 0 10px; }
+.ai-breadcrumb a { color: var(--sub); text-decoration: none; }
+.bc-sep { font-size: 9px; color: #ccc; }
+
+/* AI row badge */
+.ai-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.ai-star {
+  width: 16px; height: 16px; border-radius: 4px;
+  background: linear-gradient(135deg,#3B82F6,var(--teal));
+  display: flex; align-items: center; justify-content: center; font-size: 9px; color: #fff;
+}
+.ai-found-label { font-size: 13px; font-weight: 700; color: var(--ink); }
+
+/* AI description */
+.ai-desc-text { font-size: 11px; color: var(--sub); margin-bottom: 10px; line-height: 1.4; }
+
+/* Results bar */
+.ai-results-bar {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+}
+.ai-results-num { font-size: 13px; font-weight: 700; color: var(--ink); }
+.ai-save-btn { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--sub); }
+.ai-toggle { width: 32px; height: 18px; background: #ddd; border-radius: 9px; position: relative; cursor: pointer; }
+.ai-toggle-k { width: 14px; height: 14px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+
+/* 3-col card grid */
+.ai-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+/* AI results fade animation */
+.ai-results-wrap { transition: opacity 160ms ease, transform 160ms ease; }
+.ai-results-wrap.fading { opacity: 0; transform: translateY(5px); }
+.ai-results-wrap.settling { transition: opacity 260ms var(--fade-ease), transform 260ms var(--fade-ease); }
+
+/* ────────────────────────────────────────────────────
+   VIEW 3 — AI EMPTY (sidebar + skeleton layout)
+───────────────────────────────────────────────────── */
+.em-page { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.em-body { flex: 1; display: flex; overflow: hidden; }
+.em-main { flex: 1; overflow-y: auto; padding: 16px 20px 40px; background: #fff; }
+.em-main::-webkit-scrollbar { width: 4px; }
+.em-main::-webkit-scrollbar-thumb { background: #D8D8D8; border-radius: 2px; }
+
+/* Sidebar back button */
+.em-sidebar-top { display: flex; justify-content: flex-start; margin-bottom: 12px; }
+.em-back-btn {
+  width: 28px; height: 28px; border-radius: 7px;
+  border: 1.5px solid var(--border); background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 13px; color: #888; line-height: 1;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.em-back-btn:hover { border-color: var(--teal); color: var(--teal); background: rgba(29,173,160,.05); }
+
+/* Sidebar placeholder / live sentence */
+.em-placeholder {
+  font-size: 13px; font-weight: 700; color: #C8C8C8;
+  line-height: 1.5; padding: 4px 0 4px; transition: color 220ms ease;
+}
+.em-placeholder.has-content { color: var(--ink); }
+.em-placeholder .hi { color: var(--teal); }
+
+/* Instruction bar */
+.em-instr {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(29,173,160,.05); border: 1px solid rgba(29,173,160,.14);
+  border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
+}
+.em-instr-icon {
+  width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+  background: rgba(29,173,160,.1); display: flex; align-items: center;
+  justify-content: center; font-size: 13px; color: var(--teal);
+}
+.em-instr-title { font-size: 12px; font-weight: 700; color: var(--teal); margin-bottom: 3px; }
+.em-instr-sub { font-size: 10.5px; color: #9A9A9A; line-height: 1.45; }
+
+/* Suggestion rows */
+.em-sugg-section { margin-bottom: 20px; }
+.em-sugg-label { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #BBBBBB; margin-bottom: 8px; }
+.em-sugg-list { display: flex; flex-direction: column; gap: 6px; }
+.em-sugg-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #fff; border-radius: 10px; cursor: pointer; border: 1px solid #ECEDEF; transition: background 130ms, border-color 130ms, box-shadow 130ms; }
+.em-sugg-item:hover { background: #FAFBFF; border-color: rgba(29,173,160,.3); box-shadow: 0 2px 10px rgba(29,173,160,.07); }
+.em-sugg-spark { font-size: 11px; color: #7B9FD4; flex-shrink: 0; }
+.em-sugg-text { flex: 1; font-size: 12px; font-weight: 500; color: #333; line-height: 1.4; }
+.em-sugg-arrow { font-size: 14px; color: #D8D8D8; flex-shrink: 0; transition: color 130ms, transform 130ms; }
+.em-sugg-item:hover .em-sugg-arrow { color: var(--teal); transform: translateX(2px); }
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -700px 0; }
+  100% { background-position: 700px 0; }
+}
+.skel {
+  background: linear-gradient(90deg, #F0F0F0 25%, #E6E6E6 50%, #F0F0F0 75%);
+  background-size: 1400px 100%;
+  animation: shimmer 1.9s infinite ease-in-out;
+  border-radius: 5px;
+}
+.em-skeleton-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.skel-card { border-radius: 10px; overflow: hidden; border: 1px solid #F0F0F0; }
+.skel-img { height: 126px; width: 100%; }
+.skel-body { padding: 9px 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+.skel-line { height: 11px; }
+.skel-seller { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.skel-av { width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0; }
+.skel-name { height: 9px; flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ── LEFT PANEL ─────────────────────────────────── -->
+<div class="panel">
+  <div class="p-header">
+    <div class="p-eyebrow">Carousell · SERP · Exploration</div>
+    <div class="p-title">Search → AI SERP Flow v2</div>
+    <div class="p-sub">Sidebar layout AI SERP with Slide &amp; Dissolve edit transition.</div>
+  </div>
+
+  <!-- Transition specs -->
+  <div class="p-block" style="margin-top:14px">
+    <div class="p-block-label">Transitions</div>
+    <div class="p-row"><span class="p-key">Page switch</span><span class="p-val">300ms fade-slide</span></div>
+    <div class="p-row"><span class="p-key">Edit transition</span><span class="p-val">Slide &amp; Dissolve 520ms</span></div>
+    <div class="p-row"><span class="p-key">Edit enter ease</span><span class="p-val">cubic-bezier(0,0,0.15,1)</span></div>
+    <div class="p-row"><span class="p-key">Edit exit ease</span><span class="p-val">cubic-bezier(0.3,0,0.8,1)</span></div>
+  </div>
+
+  <!-- Flow steps -->
+  <div class="p-flow" style="margin-bottom:4px">
+    <div class="p-flow-label">User Flow</div>
+    <div class="flow-step on" id="fs1">
+      <div class="flow-num">1</div>
+      <div class="flow-text">Regular SERP — type keywords in search bar</div>
+    </div>
+    <div class="flow-step" id="fs2">
+      <div class="flow-num">2</div>
+      <div class="flow-text">Dropdown shows suggestions + "Tell us your ideal ride"</div>
+    </div>
+    <div class="flow-step" id="fs3">
+      <div class="flow-num">3a</div>
+      <div class="flow-text">Click AI prompt → AI SERP with sidebar layout</div>
+    </div>
+    <div class="flow-step" id="fs4">
+      <div class="flow-num">3b</div>
+      <div class="flow-text">Click button → Empty AI page to start fresh</div>
+    </div>
+    <div class="flow-step" id="fs5">
+      <div class="flow-num">4</div>
+      <div class="flow-text">Slide &amp; Dissolve edit from sidebar → search bar</div>
+    </div>
+  </div>
+
+  <!-- Hint box -->
+  <div class="hint">
+    <strong>Type</strong> in the search bar to open the dropdown.<br><br>
+    <strong>Click a prompt</strong> under "Tell us your ideal ride" to navigate to AI SERP.<br><br>
+    <strong>Click the button</strong> to open the empty AI page.<br><br>
+    On AI SERP — <strong>click ✎</strong> in the sidebar to edit.
+  </div>
+</div>
+
+<!-- ── STAGE + BROWSER ────────────────────────────── -->
+<div class="stage">
+  <div class="browser">
+    <div class="b-chrome">
+      <div class="b-dots">
+        <div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div>
+      </div>
+      <div class="b-url">
+        <span>🔒</span>
+        <span class="b-url-text" id="urlText">carousell.sg/cars/used-cars?q=subaru+forester</span>
+      </div>
+    </div>
+
+    <div class="b-content">
+
+      <!-- ────────────────────────────────────────────
+           VIEW 1: REGULAR SERP (identical to flow.html)
+      ─────────────────────────────────────────────── -->
+      <div class="view" id="viewRegular">
+        <nav class="g-nav">
+          <div class="logo-mark">C</div>
+          <div class="nav-cats">
+            <a href="#">Electronics</a><a href="#">Fashion</a><a href="#">Luxury</a>
+            <a href="#">Services</a><a href="#" class="cur">Cars</a><a href="#">Property</a>
+          </div>
+          <div class="nav-right">
+            <a href="#">Register</a><a href="#">Login</a>
+            <button class="nav-sell">Sell</button>
+          </div>
+        </nav>
+
+        <!-- Search bar + dropdown -->
+        <div class="r-search-row">
+          <div class="r-search-wrap" id="rSearchWrap">
+            <div class="r-search-left">
+              <span class="r-search-icon">⌕</span>
+              <input class="r-search-input" id="rSearchInput" type="text" value="Subaru forester" autocomplete="off" spellcheck="false">
+              <button class="r-clear-btn" id="rClearBtn">×</button>
+            </div>
+            <div class="r-divider"></div>
+            <div class="r-location"><span class="r-location-icon">⊙</span> All of Singapore</div>
+            <button class="r-search-btn">Search</button>
+          </div>
+
+          <!-- Two-column dropdown -->
+          <div class="dropdown" id="dropdown">
+            <div class="dd-left">
+              <div class="dd-item">
+                <span class="dd-item-icon">⌕</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main"><strong id="ddQ">Subaru forester</strong> in Used cars</div>
+                </div>
+              </div>
+              <div class="dd-item">
+                <span class="dd-item-icon">⌕</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main"><strong id="ddQ2">Subaru forester</strong> in New cars</div>
+                </div>
+              </div>
+              <div class="dd-item">
+                <span class="dd-item-icon">⌕</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main"><strong id="ddQ3">Subaru forester</strong> sj</div>
+                </div>
+              </div>
+              <div class="dd-item">
+                <span class="dd-item-icon">⌕</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main"><strong id="ddQ4">Subaru forester</strong> xt</div>
+                </div>
+              </div>
+              <div class="dd-separator"></div>
+              <div class="dd-item">
+                <span class="dd-item-icon">▦</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main">Compact SUV</div>
+                  <div class="dd-item-sub">Includes Subaru forester and 10+ models</div>
+                </div>
+              </div>
+              <div class="dd-item">
+                <span class="dd-item-icon">▦</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main">Premium compact SUV</div>
+                  <div class="dd-item-sub">Enjoy premium with the price of Subaru forester</div>
+                </div>
+              </div>
+              <div class="dd-separator"></div>
+              <div class="dd-item">
+                <span class="dd-item-icon">◎</span>
+                <div class="dd-item-body">
+                  <div class="dd-item-main">Search for user 'Subaru forester' instead</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dd-right">
+              <div class="dd-ai-label">
+                <span class="dd-ai-spark">✦</span>
+                <button class="dd-ai-title-btn" id="ddAiBtn">
+                  <span>✦</span> Tell us your ideal ride
+                </button>
+              </div>
+              <div class="dd-prompts">
+                <div class="dd-prompt" data-prompt="asian-suv">
+                  <span class="dd-prompt-spark">✦</span>
+                  <span class="dd-prompt-text">Asian SUV below 30K, 5+ year of COE</span>
+                </div>
+                <div class="dd-prompt" data-prompt="continental">
+                  <span class="dd-prompt-spark">✦</span>
+                  <span class="dd-prompt-text">Continental coupe, depreciation rate &lt; 4,000/mo</span>
+                </div>
+                <div class="dd-prompt" data-prompt="family">
+                  <span class="dd-prompt-spark">✦</span>
+                  <span class="dd-prompt-text">Family-friendly Sedan with extra bootspace</span>
+                </div>
+              </div>
+            </div>
+          </div><!-- /dropdown -->
+        </div><!-- /r-search-row -->
+
+        <!-- Page body -->
+        <div class="r-ads">Advertisement</div>
+        <div class="r-tabs-row">
+          <div class="r-tab">Carousell Select</div>
+          <div class="r-tab act">All</div>
+        </div>
+        <div class="r-breadcrumb">
+          <a href="#">Home</a><span class="r-crumb-sep">›</span>
+          <a href="#">Cars</a><span class="r-crumb-sep">›</span>
+          <span>Used cars</span>
+        </div>
+        <div class="r-filters">
+          <div class="r-filter-chip act">Used cars <span class="chev">▾</span></div>
+          <div class="r-filter-chip">Sort: Best Match <span class="chev">▾</span></div>
+          <div class="r-filter-chip">Condition <span class="chev">▾</span></div>
+          <div class="r-filter-chip">Model <span class="chev">▾</span></div>
+          <div class="r-filter-chip">More filters ⊞</div>
+        </div>
+        <div class="r-results-bar">
+          <div class="r-count">850 search results for <em style="color:var(--teal)">'subaru forester'</em> in Singapore</div>
+          <div class="r-save">Save this search <div class="r-tog"><div class="r-tog-k"></div></div> ⚙</div>
+        </div>
+        <div class="r-page-body">
+          <div class="r-listings">
+            <div class="card"><div class="card-img" style="background:#E4E8EE">🚗</div><div class="card-body"><div class="card-price">S$43,888<span class="card-likes">♡ 12</span></div><div class="card-title">Honda Jazz 1.5 VTIR CVT ABS Dsss</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#5B8DEF">L</div><span class="av-name">Landrover SG · 2h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#2B5FA4">🚙</div><div class="card-body"><div class="card-price">S$38,500<span class="card-likes">♡ 8</span></div><div class="card-title">Toyota RAV4 2.0 CVT Sunroof 7-seater</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E87B45">A</div><span class="av-name">AutoPrime · 3h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#CEC5B8">🚕</div><div class="card-body"><div class="card-price">S$29,800<span class="card-likes">♡ 24</span></div><div class="card-title">Honda CR-V 2.0 I-VTEC Executive</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#828282">S</div><span class="av-name">SG Motors · 5h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#B0392B">🚗</div><div class="card-body"><div class="card-price">S$35,200<span class="card-likes">♡ 6</span></div><div class="card-title">Mazda CX-5 2.0 SKYACTIV-G Luxury</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E8439A">M</div><span class="av-name">MaxAuto · 1h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#5A6D7D">🚙</div><div class="card-body"><div class="card-price">S$31,500<span class="card-likes">♡ 11</span></div><div class="card-title">Subaru Forester 2.0 CVT EyeSight</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#2ECC71">S</div><span class="av-name">SubaruSG · 4h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+            <div class="card"><div class="card-img" style="background:#AAB5B6">🚕</div><div class="card-body"><div class="card-price">S$37,900<span class="card-likes">♡ 7</span></div><div class="card-title">Nissan X-Trail 2.5 4WD Luxury Pkg</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#9B59B6">N</div><span class="av-name">NissanDirect · 6h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          </div>
+          <div class="r-side">
+            <div class="r-ad-side">Advertisement</div>
+          </div>
+        </div>
+      </div><!-- /viewRegular -->
+
+      <!-- ────────────────────────────────────────────
+           VIEW 2: AI SERP — SIDEBAR LAYOUT
+      ─────────────────────────────────────────────── -->
+      <div class="view hidden" id="viewAI">
+        <div class="ai-page" id="aiPage">
+
+          <!-- Global nav -->
+          <nav class="g-nav">
+            <div class="logo-mark">C</div>
+            <div class="nav-cats">
+              <a href="#">Electronics</a><a href="#">Fashion</a><a href="#">Luxury</a>
+              <a href="#">Services</a><a href="#" class="cur">Cars</a><a href="#">Property</a>
+            </div>
+            <div class="nav-right">
+              <a href="#">Register</a><a href="#">Login</a>
+              <button class="nav-sell">Sell</button>
+            </div>
+          </nav>
+
+          <!-- Secondary search bar (hidden by default, revealed on edit) -->
+          <div class="ns-container" id="nsContainer">
+            <div class="ns-bar" id="nsBar">
+              <div class="ns-search-inner" id="nsSearchInner">
+                <span class="ns-icon">⌕</span>
+                <input class="ns-input" id="nsInput" type="text" autocomplete="off" spellcheck="false" placeholder="Describe your ideal car...">
+                <button class="ns-clear" id="nsClear">×</button>
+              </div>
+              <button class="ns-search-btn" id="nsSearchBtn">Search</button>
+            </div>
+
+            <!-- Floating dropdown below ns-bar (two-column, same as regular SERP) -->
+            <div class="ns-dd" id="nsDd">
+              <div class="ns-dd-left" id="nsDdLeft">
+                <!-- Populated by JS -->
+              </div>
+              <div class="ns-dd-right" id="nsDdRight">
+                <div class="dd-ai-label">
+                  <span class="dd-ai-spark">✦</span>
+                  <span style="font-size:11px;font-weight:700;color:var(--teal)">Tell us your ideal ride</span>
+                </div>
+                <div class="dd-prompts" id="nsDdPrompts">
+                  <div class="dd-prompt" data-prompt="asian-suv">
+                    <span class="dd-prompt-spark">✦</span>
+                    <span class="dd-prompt-text">Asian SUV below 30K, 5+ year of COE</span>
+                  </div>
+                  <div class="dd-prompt" data-prompt="continental">
+                    <span class="dd-prompt-spark">✦</span>
+                    <span class="dd-prompt-text">Continental coupe, depreciation &lt; 4,000/mo</span>
+                  </div>
+                  <div class="dd-prompt" data-prompt="family">
+                    <span class="dd-prompt-spark">✦</span>
+                    <span class="dd-prompt-text">Family-friendly Sedan with extra bootspace</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div><!-- /ns-container -->
+
+          <!-- AI body: sidebar + main -->
+          <div class="ai-body" id="aiBody">
+
+            <!-- Sidebar -->
+            <aside class="ai-sidebar" id="aiSidebar">
+              <div class="ai-sidebar-top">
+                <button class="ai-edit-btn" id="aiEditBtn" title="Edit search">✎</button>
+              </div>
+              <div class="ai-sidebar-query" id="aiSidebarQuery">
+                I'm looking for a reliable, <span class="hi">Asian SUV below $30K</span>
+              </div>
+              <div class="ai-filter-section">
+                <div class="filter-label">Describe your ideal cars</div>
+                <div class="ai-chip-grid" id="aiChipGrid">
+                  <!-- Chips populated by loadPromptToSidebar() -->
+                </div>
+              </div>
+              <div class="ai-budget-section">
+                <div class="filter-label">Budget</div>
+                <div class="ai-bchip-grid" id="aiBudgetGrid">
+                  <!-- Budget chips populated by loadPromptToSidebar() -->
+                </div>
+              </div>
+            </aside>
+
+            <!-- Main results -->
+            <main class="ai-main" id="aiMain">
+              <div class="ai-results-wrap" id="aiResultsWrap">
+                <div class="ai-breadcrumb">
+                  <a href="#">Home</a><span class="bc-sep">›</span>
+                  <a href="#">Cars</a><span class="bc-sep">›</span>
+                  <span>Used cars</span>
+                </div>
+                <div class="ai-row">
+                  <div class="ai-star">✦</div>
+                  <span class="ai-found-label">Found by AI</span>
+                </div>
+                <div class="ai-desc-text" id="aiAiDesc">Compact SUV. Reliable, spacious family-friendly SUV within budget with remaining COE.</div>
+                <div class="ai-results-bar">
+                  <span class="ai-results-num"><span id="aiCount">342</span> search results</span>
+                  <div class="ai-save-btn">
+                    Save this search
+                    <div class="ai-toggle"><div class="ai-toggle-k"></div></div>
+                    <span style="color:#bbb;font-size:13px">⚙</span>
+                  </div>
+                </div>
+                <div class="ai-card-grid" id="aiCardGrid">
+                  <!-- Cards populated by buildAiCards() -->
+                </div>
+              </div>
+            </main>
+
+          </div><!-- /ai-body -->
+        </div><!-- /ai-page -->
+      </div><!-- /viewAI -->
+
+      <!-- ────────────────────────────────────────────
+           VIEW 3: AI EMPTY — sidebar + skeleton
+      ─────────────────────────────────────────────── -->
+      <div class="view hidden" id="viewEmpty">
+        <div class="em-page">
+          <nav class="g-nav">
+            <div class="logo-mark">C</div>
+            <div class="nav-cats">
+              <a href="#">Electronics</a><a href="#">Fashion</a><a href="#">Luxury</a>
+              <a href="#">Services</a><a href="#" class="cur">Cars</a><a href="#">Property</a>
+            </div>
+            <div class="nav-right">
+              <a href="#">Register</a><a href="#">Login</a>
+              <button class="nav-sell">Sell</button>
+            </div>
+          </nav>
+
+          <div class="em-body">
+            <!-- Sidebar: all chips unselected, back arrow top-left -->
+            <aside class="ai-sidebar" id="emSidebar">
+              <div class="em-sidebar-top">
+                <button class="em-back-btn" id="emBackBtn">←</button>
+              </div>
+              <div class="em-placeholder" id="emPlaceholder">I'm looking for ...</div>
+
+              <div class="ai-filter-section">
+                <div class="filter-label">Describe your ideal cars</div>
+                <div class="ai-chip-grid" id="emChipGrid">
+                  <span class="chip-off em-chip" data-key="family-friendly">Family-friendly</span>
+                  <span class="chip-off em-chip" data-key="asian">Asian</span>
+                  <span class="chip-off em-chip" data-key="suv">SUV</span>
+                  <span class="chip-off em-chip" data-key="5-seaters">5 seaters</span>
+                  <span class="chip-off em-chip" data-key="performance">Performance</span>
+                  <span class="chip-off em-chip" data-key="2-owners">&lt;2 owners</span>
+                  <span class="chip-off em-chip" data-key="mileage">&lt; 4,400km/yr</span>
+                  <span class="chip-off em-chip" data-key="continental">Continental</span>
+                  <span class="chip-add">Add +</span>
+                </div>
+              </div>
+
+              <div class="ai-budget-section">
+                <div class="filter-label">Budget</div>
+                <div class="ai-bchip-grid" id="emBudgetGrid">
+                  <span class="bchip em-bchip" data-val="30k">Below $30,000</span>
+                  <span class="bchip em-bchip" data-val="40k">S$40,000</span>
+                  <span class="bchip em-bchip" data-val="50k">S$50,000</span>
+                  <span class="bchip bchip-custom">Custom +</span>
+                </div>
+              </div>
+            </aside>
+
+            <!-- Main: instruction + skeleton loading -->
+            <main class="em-main">
+              <!-- Instruction nudge -->
+              <div class="em-instr">
+                <div class="em-instr-icon">✦</div>
+                <div>
+                  <div class="em-instr-title">Select attributes to start exploring</div>
+                  <div class="em-instr-sub">Choose chips from the sidebar, or pick a suggestion below — we'll find your perfect match</div>
+                </div>
+              </div>
+
+              <!-- Suggestion rows -->
+              <div class="em-sugg-section">
+                <div class="em-sugg-label"><span>✦</span> Suggested for you</div>
+                <div class="em-sugg-list">
+                  <div class="em-sugg-item" data-prompt="asian-suv">
+                    <span class="em-sugg-spark">✦</span>
+                    <span class="em-sugg-text">Asian SUV below 30K, 5+ year of COE</span>
+                    <span class="em-sugg-arrow">›</span>
+                  </div>
+                  <div class="em-sugg-item" data-prompt="continental">
+                    <span class="em-sugg-spark">✦</span>
+                    <span class="em-sugg-text">Continental coupe, depreciation rate &lt; 4,000/mo</span>
+                    <span class="em-sugg-arrow">›</span>
+                  </div>
+                  <div class="em-sugg-item" data-prompt="family">
+                    <span class="em-sugg-spark">✦</span>
+                    <span class="em-sugg-text">Family-friendly Sedan with extra bootspace</span>
+                    <span class="em-sugg-arrow">›</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Skeleton loading grid -->
+              <div class="em-skeleton-grid">
+                <!-- 6 skeleton cards -->
+                <div class="skel-card">
+                  <div class="skel skel-img"></div>
+                  <div class="skel-body">
+                    <div class="skel skel-line" style="width:55%"></div>
+                    <div class="skel skel-line" style="width:82%"></div>
+                    <div class="skel skel-line" style="width:70%"></div>
+                    <div class="skel-seller">
+                      <div class="skel skel-av"></div>
+                      <div class="skel skel-name"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="skel-card">
+                  <div class="skel skel-img"></div>
+                  <div class="skel-body">
+                    <div class="skel skel-line" style="width:48%"></div>
+                    <div class="skel skel-line" style="width:75%"></div>
+                    <div class="skel skel-line" style="width:62%"></div>
+                    <div class="skel-seller">
+                      <div class="skel skel-av"></div>
+                      <div class="skel skel-name"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="skel-card">
+                  <div class="skel skel-img"></div>
+                  <div class="skel-body">
+                    <div class="skel skel-line" style="width:52%"></div>
+                    <div class="skel skel-line" style="width:88%"></div>
+                    <div class="skel skel-line" style="width:67%"></div>
+                    <div class="skel-seller">
+                      <div class="skel skel-av"></div>
+                      <div class="skel skel-name"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="skel-card">
+                  <div class="skel skel-img"></div>
+                  <div class="skel-body">
+                    <div class="skel skel-line" style="width:60%"></div>
+                    <div class="skel skel-line" style="width:78%"></div>
+                    <div class="skel skel-line" style="width:55%"></div>
+                    <div class="skel-seller">
+                      <div class="skel skel-av"></div>
+                      <div class="skel skel-name"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="skel-card">
+                  <div class="skel skel-img"></div>
+                  <div class="skel-body">
+                    <div class="skel skel-line" style="width:44%"></div>
+                    <div class="skel skel-line" style="width:72%"></div>
+                    <div class="skel skel-line" style="width:80%"></div>
+                    <div class="skel-seller">
+                      <div class="skel skel-av"></div>
+                      <div class="skel skel-name"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="skel-card">
+                  <div class="skel skel-img"></div>
+                  <div class="skel-body">
+                    <div class="skel skel-line" style="width:58%"></div>
+                    <div class="skel skel-line" style="width:84%"></div>
+                    <div class="skel skel-line" style="width:50%"></div>
+                    <div class="skel-seller">
+                      <div class="skel skel-av"></div>
+                      <div class="skel skel-name"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </div><!-- /viewEmpty -->
+
+    </div><!-- /b-content -->
+  </div><!-- /browser -->
+</div><!-- /stage -->
+
+<script>
+/* ══════════════════════════════════════════════════════
+   PROMPT DATA
+══════════════════════════════════════════════════════ */
+const PROMPTS = {
+  'asian-suv': {
+    url: 'carousell.sg/cars/ai?q=asian+suv+below+30k+5yr+coe',
+    promptText: "I'm looking for an Asian SUV below 30K with 5+ year of COE",
+    hiText: 'Asian SUV below $30K',
+    sbHiText: 'Asian SUV below 30K, 5+ COE',
+    sidebarQuery: "I'm looking for a reliable, <span class='hi'>Asian SUV below $30K</span>",
+    chips: [
+      {label:'Family-friendly', on:true}, {label:'Asian', on:true}, {label:'SUV', on:true},
+      {label:'5 seaters', on:false}, {label:'Performance', on:false}, {label:'< 2 owners', on:false},
+      {label:'Add +', add:true}
+    ],
+    budgetChip: 'Below $30,000',
+    count: '342',
+    aiDesc: 'Compact SUV. Reliable, spacious family-friendly SUV within budget with remaining COE.',
+  },
+  'continental': {
+    url: 'carousell.sg/cars/ai?q=continental+coupe+depreciation+4000',
+    promptText: "I'm looking for a Continental coupe with depreciation under $4,000/mo",
+    hiText: 'low-depreciation Continental coupe',
+    sbHiText: "Continental coupe, depr < $4K/mo",
+    sidebarQuery: "I'm looking for a <span class='hi'>low-depreciation Continental coupe</span>",
+    chips: [
+      {label:'Continental', on:true}, {label:'Coupe', on:true}, {label:'Low mileage', on:true},
+      {label:'< 2 owners', on:false}, {label:'Manual', on:false},
+      {label:'Add +', add:true}
+    ],
+    budgetChip: '< $4K/mo depr.',
+    count: '156',
+    aiDesc: 'European coupe. Premium driving experience with manageable depreciation and ownership costs.',
+  },
+  'family': {
+    url: 'carousell.sg/cars/ai?q=family+sedan+bootspace',
+    promptText: "I'm looking for a family-friendly Sedan with extra bootspace",
+    hiText: 'family Sedan with large boot',
+    sbHiText: "Family Sedan, extra bootspace",
+    sidebarQuery: "I'm looking for a <span class='hi'>family-friendly Sedan with large bootspace</span>",
+    chips: [
+      {label:'Family-friendly', on:true}, {label:'Sedan', on:true}, {label:'Large boot', on:true},
+      {label:'5+ seaters', on:false}, {label:'< 4 owners', on:false},
+      {label:'Add +', add:true}
+    ],
+    budgetChip: '$40,000',
+    count: '287',
+    aiDesc: 'Practical family sedan. Spacious boot, comfortable ride, reliable for daily family use.',
+  }
+};
+
+/* ══════════════════════════════════════════════════════
+   CAR DATA (same 6 cards as flow.html)
+══════════════════════════════════════════════════════ */
+const CARS = [
+  {price:'S$43,888', likes:12, title:'Honda Jazz 1.5 VTIR CVT ABS', bg:'#E4E8EE', emoji:'🚗', av:'#5B8DEF', ini:'L', seller:'Landrover SG', t:'2h ago'},
+  {price:'S$38,500', likes:8,  title:'Toyota RAV4 2.0 CVT Sunroof 7-seater', bg:'#2B5FA4', emoji:'🚙', av:'#E87B45', ini:'A', seller:'AutoPrime', t:'3h ago'},
+  {price:'S$29,800', likes:24, title:'Honda CR-V 2.0 i-VTEC Executive', bg:'#CEC5B8', emoji:'🚕', av:'#828282', ini:'S', seller:'SG Motors', t:'5h ago'},
+  {price:'S$35,200', likes:6,  title:'Mazda CX-5 2.0 Skyactiv-G 2WD', bg:'#B0392B', emoji:'🚗', av:'#E8439A', ini:'M', seller:'MaxAuto', t:'1h ago'},
+  {price:'S$31,500', likes:11, title:'Subaru Forester 2.0 CVT EyeSight', bg:'#5A6D7D', emoji:'🚙', av:'#2ECC71', ini:'S', seller:'SubaruSG', t:'4h ago'},
+  {price:'S$37,900', likes:7,  title:'Nissan X-Trail 2.5 4WD Luxury Pkg', bg:'#AAB5B6', emoji:'🚕', av:'#9B59B6', ini:'N', seller:'NissanDirect', t:'6h ago'},
+];
+
+function buildAiCards() {
+  const grid = document.getElementById('aiCardGrid');
+  grid.innerHTML = CARS.map(c => `
+    <div class="card">
+      <div class="card-img" style="background:${c.bg}">${c.emoji}</div>
+      <div class="card-body">
+        <div class="card-price">${c.price}<span class="card-likes">♡ ${c.likes}</span></div>
+        <div class="card-title">${c.title}</div>
+        <div class="card-foot">
+          <div class="card-seller">
+            <div class="av" style="background:${c.av}">${c.ini}</div>
+            <span class="av-name">${c.seller} · ${c.t}</span>
+          </div>
+          <span class="card-chat">💬 Chat</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+buildAiCards();
+
+/* ══════════════════════════════════════════════════════
+   ELEMENT REFS
+══════════════════════════════════════════════════════ */
+const urlText     = document.getElementById('urlText');
+const viewRegular = document.getElementById('viewRegular');
+const viewAI      = document.getElementById('viewAI');
+const viewEmpty   = document.getElementById('viewEmpty');
+const fs1 = document.getElementById('fs1');
+const fs2 = document.getElementById('fs2');
+const fs3 = document.getElementById('fs3');
+const fs4 = document.getElementById('fs4');
+const fs5 = document.getElementById('fs5');
+
+// Regular SERP
+const rSearchInput = document.getElementById('rSearchInput');
+const rSearchWrap  = document.getElementById('rSearchWrap');
+const rClearBtn    = document.getElementById('rClearBtn');
+const dropdown     = document.getElementById('dropdown');
+const ddAiBtn      = document.getElementById('ddAiBtn');
+
+// AI SERP
+const aiSidebar  = document.getElementById('aiSidebar');
+const aiMain     = document.getElementById('aiMain');
+const aiEditBtn  = document.getElementById('aiEditBtn');
+const nsBar      = document.getElementById('nsBar');
+const nsInput    = document.getElementById('nsInput');
+const nsClear    = document.getElementById('nsClear');
+const nsSearchBtn= document.getElementById('nsSearchBtn');
+const nsDd       = document.getElementById('nsDd');
+const nsDdLeft   = document.getElementById('nsDdLeft');
+const nsSearchInner = document.getElementById('nsSearchInner');
+const aiResultsWrap = document.getElementById('aiResultsWrap');
+
+/* ══════════════════════════════════════════════════════
+   FLOW STEP HELPERS
+══════════════════════════════════════════════════════ */
+let currentView = 'regular';
+
+function setFlowStep(...active) {
+  [fs1,fs2,fs3,fs4,fs5].forEach(f => f.classList.remove('on'));
+  active.forEach(el => el && el.classList.add('on'));
+}
+
+/* ══════════════════════════════════════════════════════
+   VIEW SWITCHING
+══════════════════════════════════════════════════════ */
+function switchTo(target, promptKey) {
+  const from = currentView === 'regular' ? viewRegular
+             : currentView === 'ai'      ? viewAI
+             : viewEmpty;
+  currentView = target;
+
+  // Populate AI sidebar before showing
+  if (target === 'ai' && promptKey) {
+    loadPromptToSidebar(promptKey);
+  }
+
+  // Exit animation on current view
+  from.classList.add('exit');
+
+  const to = target === 'regular' ? viewRegular
+           : target === 'ai'      ? viewAI
+           : viewEmpty;
+  to.scrollTop = 0;
+  aiMain.scrollTop = 0;
+
+  setTimeout(() => {
+    from.classList.remove('exit');
+    from.classList.add('hidden');
+    to.classList.remove('hidden');
+
+    if (target === 'regular') {
+      urlText.textContent = 'carousell.sg/cars/used-cars?q=subaru+forester';
+      setFlowStep(fs1);
+    }
+
+    // Reset edit mode state on AI view if we just arrived
+    if (target === 'ai') {
+      isEditMode = false;
+      editAnimating = false;
+      // Ensure sidebar is visible, nsBar is hidden
+      aiSidebar.style.cssText = '';
+      nsBar.style.cssText = '';
+    }
+  }, 180);
+}
+
+/* ══════════════════════════════════════════════════════
+   LOAD PROMPT INTO AI SIDEBAR + RESULTS
+══════════════════════════════════════════════════════ */
+function loadPromptToSidebar(key) {
+  const d = PROMPTS[key];
+  if (!d) return;
+  urlText.textContent = d.url;
+
+  // Sidebar query text
+  document.getElementById('aiSidebarQuery').innerHTML = d.sidebarQuery;
+
+  // Rebuild chip grid
+  const chipGrid = document.getElementById('aiChipGrid');
+  chipGrid.innerHTML = d.chips.map(c => {
+    if (c.add) return `<span class="chip-add">${c.label}</span>`;
+    return c.on
+      ? `<span class="chip-on">${c.label}</span>`
+      : `<span class="chip-off">${c.label}</span>`;
+  }).join('');
+
+  // Rebuild budget chips
+  const budgetGrid = document.getElementById('aiBudgetGrid');
+  const allBudgets = ['Below $30,000', '< $4K/mo depr.', '$40,000', '$50,000'];
+  budgetGrid.innerHTML = allBudgets.map(b =>
+    `<span class="bchip${b === d.budgetChip ? ' on' : ''}">${b}</span>`
+  ).join('') + `<span class="bchip bchip-custom">Custom +</span>`;
+
+  // Results section
+  document.getElementById('aiCount').textContent = d.count;
+  document.getElementById('aiAiDesc').textContent = d.aiDesc;
+}
+
+/* ══════════════════════════════════════════════════════
+   UPDATE SIDEBAR IN PLACE (after search from ns-bar)
+══════════════════════════════════════════════════════ */
+function updateSidebarInPlace(query, promptKey) {
+  // Fade results out
+  aiResultsWrap.classList.add('fading');
+
+  setTimeout(() => {
+    if (promptKey) {
+      loadPromptToSidebar(promptKey);
+    } else {
+      // Generic semantic update
+      const words = query.trim().split(/\s+/).slice(0, 3);
+      document.getElementById('aiSidebarQuery').innerHTML =
+        "I'm looking for <span class='hi'>" + query + "</span>";
+      const chipGrid = document.getElementById('aiChipGrid');
+      chipGrid.innerHTML = words.map(w =>
+        `<span class="chip-on">${w}</span>`).join('') +
+        `<span class="chip-add">Add +</span>`;
+      document.getElementById('aiCount').textContent = Math.floor(Math.random() * 300 + 80);
+      document.getElementById('aiAiDesc').textContent = 'AI-curated results based on your refined search criteria.';
+    }
+    // Fade results back in
+    aiResultsWrap.classList.remove('fading');
+    aiResultsWrap.classList.add('settling');
+    setTimeout(() => aiResultsWrap.classList.remove('settling'), 280);
+  }, 160);
+}
+
+/* ══════════════════════════════════════════════════════
+   REGULAR SERP DROPDOWN
+══════════════════════════════════════════════════════ */
+function openDropdown() {
+  dropdown.classList.add('open');
+  setFlowStep(fs1, fs2);
+}
+function closeDropdown() {
+  dropdown.classList.remove('open');
+  if (currentView === 'regular') setFlowStep(fs1);
+}
+
+rSearchInput.addEventListener('focus', () => {
+  if (rSearchInput.value.trim()) openDropdown();
+});
+rSearchInput.addEventListener('input', () => {
+  const v = rSearchInput.value.trim();
+  rSearchWrap.classList.toggle('has-text', !!v);
+  if (v) openDropdown(); else closeDropdown();
+  ['ddQ','ddQ2','ddQ3','ddQ4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v || 'Subaru forester';
+  });
+});
+rClearBtn.addEventListener('click', () => {
+  rSearchInput.value = '';
+  rSearchWrap.classList.remove('has-text');
+  closeDropdown();
+  rSearchInput.focus();
+});
+document.addEventListener('mousedown', e => {
+  if (!dropdown.contains(e.target) && !rSearchWrap.contains(e.target)) {
+    closeDropdown();
+  }
+});
+
+// Prompt clicks in regular SERP dropdown → navigate to AI SERP
+document.querySelectorAll('.dd-prompt').forEach(el => {
+  el.addEventListener('click', () => {
+    const key = el.dataset.prompt;
+    closeDropdown();
+    setFlowStep(fs3, fs5);
+    switchTo('ai', key);
+  });
+});
+
+// "Tell us your ideal ride" button → Empty AI page
+ddAiBtn.addEventListener('click', () => {
+  closeDropdown();
+  setFlowStep(fs4, fs5);
+  switchTo('empty');
+  urlText.textContent = 'carousell.sg/cars/ai?start=fresh';
+});
+
+/* ══════════════════════════════════════════════════════
+   SEMANTIC / KEYWORD DETECTION
+══════════════════════════════════════════════════════ */
+function isSemanticQuery(q) {
+  const words = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const semanticWords = [
+    'looking','want','need','find','below','under','above','with',
+    'family','friendly','performance','depreciation','coupe','sedan',
+    'suv','coe','spacious','comfortable','reliable','high','low',
+    'budget','premium','luxury','affordable','economic','fast','safe',
+    'fuel','efficient'
+  ];
+  if (words.length >= 4) return true;
+  return words.some(w => semanticWords.includes(w));
+}
+
+function matchPromptKey(q) {
+  const l = q.toLowerCase();
+  if (l.includes('asian') || (l.includes('suv') && (l.includes('30') || l.includes('coe')))) return 'asian-suv';
+  if (l.includes('continental') || l.includes('coupe') || l.includes('depreciation')) return 'continental';
+  if (l.includes('family') || l.includes('sedan') || l.includes('boot')) return 'family';
+  return null;
+}
+
+/* Keyword suggestions for ns-dd left column */
+function buildKeywordSuggestions(q) {
+  return `
+    <div class="dd-item"><span class="dd-item-icon">⌕</span><div class="dd-item-body"><div class="dd-item-main"><strong>${q}</strong> in Used cars</div></div></div>
+    <div class="dd-item"><span class="dd-item-icon">⌕</span><div class="dd-item-body"><div class="dd-item-main"><strong>${q}</strong> in New cars</div></div></div>
+    <div class="dd-separator"></div>
+    <div class="dd-item"><span class="dd-item-icon">▦</span><div class="dd-item-body"><div class="dd-item-main">Compact SUV · 10+ models</div></div></div>
+    <div class="dd-item"><span class="dd-item-icon">▦</span><div class="dd-item-body"><div class="dd-item-main">Premium compact SUV</div></div></div>`;
+}
+
+/* AI suggestions for ns-dd left column (semantic mode) */
+function buildAiSuggestions(q) {
+  const key = matchPromptKey(q);
+  const d = key ? PROMPTS[key] : null;
+  const cap = q.charAt(0).toUpperCase() + q.slice(1);
+  const items = [
+    { text: cap, promptKey: null, query: cap },
+    { text: d ? d.promptText : "I'm looking for a " + q + ' within budget', promptKey: key, query: null },
+    { text: d ? 'Reliable ' + q.split(' ').slice(0,3).join(' ') + ' for daily use' : q + ' — spacious and fuel-efficient', promptKey: null, query: q },
+  ];
+  return items.map(item => `
+    <div class="dd-item" style="white-space:normal" data-ns-prompt="${item.promptKey || ''}" data-ns-query="${item.promptKey ? '' : item.query}">
+      <span class="dd-item-icon" style="color:#7B9FD4;align-self:flex-start;margin-top:2px">✦</span>
+      <div class="dd-item-body"><div class="dd-item-main" style="white-space:normal;font-weight:500;color:#333;font-size:12.5px">${item.text}</div></div>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════
+   NS-BAR DROPDOWN LOGIC
+══════════════════════════════════════════════════════ */
+function openNsDd() { nsDd.classList.add('open'); }
+function closeNsDd() { nsDd.classList.remove('open'); }
+
+function updateNsDd(q) {
+  const semantic = isSemanticQuery(q);
+  nsDd.classList.toggle('semantic', semantic);
+  nsDdLeft.innerHTML = semantic ? buildAiSuggestions(q) : buildKeywordSuggestions(q);
+
+  // Bind clicks on freshly created AI suggestion items
+  nsDdLeft.querySelectorAll('[data-ns-prompt]').forEach(el => {
+    el.addEventListener('click', () => {
+      closeNsDd();
+      const pk = el.dataset.nsPrompt;
+      const aq = el.dataset.nsQuery;
+      const key = pk || matchPromptKey(aq || '');
+      closeEditMode();
+      setTimeout(() => updateSidebarInPlace(aq || q, key || null), 100);
+    });
+  });
+  // Keyword item clicks
+  nsDdLeft.querySelectorAll('.dd-item:not([data-ns-prompt])').forEach(el => {
+    el.addEventListener('click', () => {
+      closeNsDd();
+      const text = el.querySelector('.dd-item-main')?.textContent || '';
+      const kw = text.replace(/ in (Used|New) cars/, '').replace(' · 10+ models', '').trim();
+      // Go to regular SERP with keyword
+      rSearchInput.value = kw;
+      rSearchWrap.classList.toggle('has-text', !!kw);
+      closeEditMode();
+      setTimeout(() => switchTo('regular'), 80);
+    });
+  });
+}
+
+nsInput.addEventListener('input', function() {
+  const v = this.value.trim();
+  nsSearchInner.classList.toggle('has-text', !!this.value);
+  if (v) { updateNsDd(v); openNsDd(); }
+  else   { closeNsDd(); }
+});
+nsInput.addEventListener('focus', function() {
+  if (this.value.trim()) { updateNsDd(this.value.trim()); openNsDd(); }
+});
+nsInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { closeNsDd(); closeEditMode(); }
+  if (e.key === 'Enter')  { nsSearchBtn.click(); }
+});
+nsClear.addEventListener('click', function() {
+  nsInput.value = '';
+  nsSearchInner.classList.remove('has-text');
+  closeNsDd();
+  nsInput.focus();
+});
+
+// Prompt clicks in ns-dd right column
+document.querySelectorAll('#nsDdPrompts .dd-prompt').forEach(el => {
+  el.addEventListener('click', () => {
+    const key = el.dataset.prompt;
+    closeNsDd();
+    closeEditMode();
+    setTimeout(() => updateSidebarInPlace(null, key), 100);
+  });
+});
+
+// Search button in ns-bar
+nsSearchBtn.addEventListener('click', function() {
+  const q = nsInput.value.trim();
+  closeNsDd();
+  if (!q) { closeEditMode(); return; }
+
+  if (isSemanticQuery(q)) {
+    // Semantic → update sidebar in-place, then return to sidebar view
+    const key = matchPromptKey(q);
+    closeEditMode();
+    setTimeout(() => updateSidebarInPlace(q, key), 80);
+  } else {
+    // Keyword → go to regular SERP
+    rSearchInput.value = q;
+    rSearchWrap.classList.toggle('has-text', !!q);
+    setFlowStep(fs1);
+    closeEditMode();
+    setTimeout(() => switchTo('regular'), 80);
+  }
+});
+
+// Close ns-dd when clicking outside
+document.addEventListener('mousedown', e => {
+  if (currentView === 'ai' && isEditMode) {
+    if (!nsDd.contains(e.target) && !nsBar.contains(e.target)) {
+      closeNsDd();
+    }
+  }
+});
+
+/* ══════════════════════════════════════════════════════
+   SLIDE & DISSOLVE ANIMATION — EDIT MODE
+══════════════════════════════════════════════════════ */
+let isEditMode   = false;
+let editAnimating = false;
+
+/* Forward: sidebar → ns-bar (520ms total) */
+function openEditMode() {
+  if (isEditMode || editAnimating) return;
+  editAnimating = true;
+  setFlowStep(fs3, fs5);
+
+  /* 1. Sidebar slides left and fades out */
+  aiSidebar.style.overflow   = 'hidden';
+  aiSidebar.style.transition = 'transform 480ms cubic-bezier(0.3,0,0.8,1), opacity 240ms ease';
+  aiSidebar.style.transform  = 'translateX(-100%)';
+  aiSidebar.style.opacity    = '0';
+
+  /* 2. t=200ms: collapse sidebar width, reveal ns-bar */
+  setTimeout(() => {
+    aiSidebar.style.width    = '0';
+    aiSidebar.style.minWidth = '0';
+
+    // Set ns-bar start state (invisible, shifted up)
+    nsBar.style.height       = '50px';
+    nsBar.style.overflow     = 'visible';
+    nsBar.style.opacity      = '0';
+    nsBar.style.transform    = 'translateY(-10px)';
+    nsBar.style.pointerEvents= 'none';
+    nsBar.style.transition   = '';
+
+    // Next frame: animate ns-bar in
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      nsBar.style.transition  = 'opacity 360ms cubic-bezier(0,0,0.15,1), transform 360ms cubic-bezier(0,0,0.15,1)';
+      nsBar.style.opacity     = '1';
+      nsBar.style.transform   = 'translateY(0)';
+      nsBar.style.pointerEvents = 'all';
+    }));
+  }, 200);
+
+  /* 3. t=520ms: done */
+  setTimeout(() => {
+    editAnimating = false;
+    isEditMode    = true;
+    // Pre-fill input with current query text (strip HTML tags)
+    const qEl = document.getElementById('aiSidebarQuery');
+    const rawText = qEl ? qEl.innerText : '';
+    nsInput.value = rawText;
+    nsSearchInner.classList.toggle('has-text', !!rawText);
+    nsInput.focus();
+    nsInput.select();
+  }, 520);
+}
+
+/* Backward: ns-bar → sidebar (520ms total) */
+function closeEditMode() {
+  if (!isEditMode || editAnimating) return;
+  editAnimating = true;
+  closeNsDd();
+
+  /* 1. ns-bar fades + slides up */
+  nsBar.style.transition    = 'opacity 220ms cubic-bezier(0.4,0,1,1), transform 220ms cubic-bezier(0.4,0,1,1)';
+  nsBar.style.opacity       = '0';
+  nsBar.style.transform     = 'translateY(-8px)';
+  nsBar.style.pointerEvents = 'none';
+
+  /* 2. t=80ms: collapse ns-bar height */
+  setTimeout(() => {
+    nsBar.style.height   = '0';
+    nsBar.style.overflow = 'hidden';
+    nsBar.style.transition = '';
+  }, 80);
+
+  /* 3. t=120ms: restore sidebar width + animate in */
+  setTimeout(() => {
+    aiSidebar.style.cssText = `width:var(--sidebar-w); min-width:var(--sidebar-w); overflow:visible; opacity:0; transform:translateX(-24px);`;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      aiSidebar.style.transition = 'transform 440ms cubic-bezier(0,0,0.15,1), opacity 400ms cubic-bezier(0,0,0.15,1)';
+      aiSidebar.style.transform  = 'translateX(0)';
+      aiSidebar.style.opacity    = '1';
+    }));
+  }, 120);
+
+  /* 4. t=520ms: clean up all inline styles */
+  setTimeout(() => {
+    aiSidebar.style.cssText = '';
+    nsBar.style.cssText     = '';
+    editAnimating = false;
+    isEditMode    = false;
+    nsInput.value = '';
+    nsSearchInner.classList.remove('has-text');
+  }, 520);
+}
+
+// Wire up edit button in sidebar
+aiEditBtn.addEventListener('click', openEditMode);
+
+/* ══════════════════════════════════════════════════════
+   AI EMPTY — chip interactions, sentence builder, navigation
+══════════════════════════════════════════════════════ */
+const emPlaceholder   = document.getElementById('emPlaceholder');
+const emSelectedChips = new Set();
+const emSelectedBudget = new Set();
+let   emNavigating    = false;
+
+// Prompt key detection from selected chips
+const CHIP_PROMPT_MAP = {
+  'family-friendly': 'family',
+  'asian':           'asian-suv',
+  'suv':             'asian-suv',
+  'continental':     'continental',
+};
+
+// Dynamically build sentence from selected chips
+function buildEmSentence() {
+  if (emSelectedChips.size === 0 && emSelectedBudget.size === 0) {
+    emPlaceholder.innerHTML = "I'm looking for ...";
+    emPlaceholder.classList.remove('has-content');
+    return;
+  }
+
+  const sel = emSelectedChips;
+  let parts = [];
+  let useAn = false;
+
+  // Main attributes / type (ordered)
+  if (sel.has('asian'))           { parts.push("<span class='hi'>Asian</span>"); useAn = true; }
+  if (sel.has('continental'))       parts.push("<span class='hi'>Continental</span>");
+  if (sel.has('family-friendly'))   parts.push("<span class='hi'>family-friendly</span>");
+  if (sel.has('suv'))               parts.push("<span class='hi'>SUV</span>");
+
+  // Secondary specs grouped as "with …"
+  const specs = [];
+  if (sel.has('5-seaters'))  specs.push('5-seater');
+  if (sel.has('performance')) specs.push('high-performance');
+  if (sel.has('2-owners'))   specs.push('&lt;2 owners');
+  if (sel.has('mileage'))    specs.push('low mileage');
+  if (specs.length) parts.push("with <span class='hi'>" + specs.join(' &amp; ') + "</span>");
+
+  // Budget
+  if (emSelectedBudget.has('30k'))       parts.push("<span class='hi'>below $30,000</span>");
+  else if (emSelectedBudget.has('40k'))  parts.push("<span class='hi'>below $40,000</span>");
+  else if (emSelectedBudget.has('50k'))  parts.push("<span class='hi'>below $50,000</span>");
+
+  const article = useAn ? 'an' : 'a';
+  emPlaceholder.innerHTML = "I'm looking for " + article + " " + parts.join(' ');
+  emPlaceholder.classList.add('has-content');
+}
+
+// Filter chips — toggle + sentence + navigate
+document.querySelectorAll('.em-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (emNavigating) return;
+    const key = chip.dataset.key;
+    if (emSelectedChips.has(key)) {
+      emSelectedChips.delete(key);
+      chip.classList.remove('chip-on');
+      chip.classList.add('chip-off');
+    } else {
+      emSelectedChips.add(key);
+      chip.classList.remove('chip-off');
+      chip.classList.add('chip-on');
+    }
+    buildEmSentence();
+    tryEmNavigate();
+  });
+});
+
+// Budget chips — single-select + sentence + navigate
+document.querySelectorAll('.em-bchip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (emNavigating) return;
+    const val = chip.dataset.val;
+    const alreadyOn = chip.classList.contains('on');
+    document.querySelectorAll('.em-bchip').forEach(b => b.classList.remove('on'));
+    emSelectedBudget.clear();
+    if (!alreadyOn) { chip.classList.add('on'); emSelectedBudget.add(val); }
+    buildEmSentence();
+    tryEmNavigate();
+  });
+});
+
+// Suggestion rows → navigate directly
+document.querySelectorAll('.em-sugg-item').forEach(el => {
+  el.addEventListener('click', () => {
+    if (emNavigating) return;
+    setFlowStep(fs3, fs5);
+    switchTo('ai', el.dataset.prompt);
+    resetEmptyPage();
+  });
+});
+
+// Back arrow → return to Regular SERP
+document.getElementById('emBackBtn').addEventListener('click', () => {
+  setFlowStep(fs1);
+  switchTo('regular');
+  resetEmptyPage();
+});
+
+function tryEmNavigate() {
+  // Determine best prompt from selected chips
+  let promptKey = null;
+  for (const key of emSelectedChips) {
+    if (CHIP_PROMPT_MAP[key]) { promptKey = CHIP_PROMPT_MAP[key]; break; }
+  }
+  if (!promptKey) return;
+
+  emNavigating = true;
+  // 700ms shimmer pause so user sees their chip selection + sentence, then navigate
+  setTimeout(() => {
+    setFlowStep(fs3, fs5);
+    switchTo('ai', promptKey);
+    resetEmptyPage();
+  }, 700);
+}
+
+function resetEmptyPage() {
+  emNavigating = false;
+  emSelectedChips.clear();
+  emSelectedBudget.clear();
+  document.querySelectorAll('.em-chip').forEach(c => { c.classList.remove('chip-on'); c.classList.add('chip-off'); });
+  document.querySelectorAll('.em-bchip').forEach(c => c.classList.remove('on'));
+  if (emPlaceholder) { emPlaceholder.innerHTML = "I'm looking for ..."; emPlaceholder.classList.remove('has-content'); }
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════ */
+// Set initial state
+setFlowStep(fs1);
+rSearchWrap.classList.toggle('has-text', !!rSearchInput.value.trim());
+
+// Pre-load first prompt so AI view has content if navigated to directly
+loadPromptToSidebar('asian-suv');
+</script>
+</body>
+</html>
