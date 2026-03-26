@@ -189,10 +189,13 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
 /* Hero card */
 .hero { position: relative; background: #EEEFF2; margin: 12px 16px 0; border-radius: 14px; padding: 16px; transition: padding var(--spring-dur) var(--spring), margin var(--spring-dur) var(--spring), border-radius var(--spring-dur) var(--spring), background var(--spring-dur) var(--spring); flex-shrink: 0; }
 .hero.collapsed { padding: 10px 16px; margin: 8px 16px 0; }
-.hero-label-row { margin-bottom: 8px; overflow: hidden; max-height: 22px; opacity: 1; transition: max-height var(--spring-dur) var(--spring), opacity 150ms ease, margin-bottom var(--spring-dur) var(--spring); }
+.hero-label-row { margin-bottom: 8px; overflow: hidden; max-height: 22px; opacity: 1; transition: max-height var(--spring-dur) var(--spring), opacity 150ms ease, margin-bottom var(--spring-dur) var(--spring); display: flex; align-items: center; justify-content: space-between; }
 .hero.collapsed .hero-label-row { max-height: 0; opacity: 0; margin-bottom: 0; }
 .hero-label { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #9A9AA8; }
 .hero-label-spark { font-size: 12px; }
+.hero-edit-btn { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: #BBBBBB; cursor: pointer; padding: 2px 6px; border-radius: 5px; line-height: 1; transition: color 150ms, background 150ms; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+.hero-edit-btn:hover { color: var(--teal); background: rgba(29,173,160,.09); }
+.hero-edit-btn .pencil-icon { font-size: 13px; }
 .hero-prompt-row { display: flex; align-items: center; gap: 8px; position: relative; min-height: 30px; }
 .hero-prompt { flex: 1; min-width: 0; font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.35; transition: font-size var(--spring-dur) var(--spring), opacity var(--fade-out) ease, transform var(--fade-out) ease; }
 .hero.collapsed .hero-prompt { font-size: 13px; }
@@ -219,7 +222,6 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
 .hero.editing .hero-label-row { max-height: 0; opacity: 0; margin-bottom: 0; }
 .hero.editing .chip-row { max-height: 0; opacity: 0; margin-top: 0; }
 .hero.editing .hero-prompt { opacity: 0; transform: translateY(-5px); pointer-events: none; }
-.hero.editing .hero-pencil { opacity: 0; pointer-events: none; }
 .hero.editing .hero-search-bar { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .hero-search-bar .hsb-vdivider,
 .hero-search-bar .hsb-location { display: none; }
@@ -591,12 +593,12 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
         <section class="hero" id="aiHero">
           <div class="hero-label-row">
             <div class="hero-label"><span class="hero-label-spark">✦</span> Tell us your ideal ride</div>
+            <span class="hero-edit-btn" id="aiHeroPencil"><span class="pencil-icon">✎</span> Your own request</span>
           </div>
           <div class="hero-prompt-row">
             <div class="hero-prompt" id="aiHeroPrompt">
               I'm looking for an <span class="hi" id="aiHeroHi">Asian SUV below 30K</span>
             </div>
-            <span class="hero-pencil" id="aiHeroPencil">✎</span>
             <div class="hero-search-bar">
               <div class="hsb-wrap">
                 <div class="hsb-left" id="aiHsbLeft">
