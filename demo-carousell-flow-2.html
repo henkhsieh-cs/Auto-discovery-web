@@ -624,7 +624,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
           <div class="r-search-wrap" id="rSearchWrap">
             <div class="r-search-left">
               <span class="r-search-icon">⌕</span>
-              <input class="r-search-input" id="rSearchInput" type="text" value="Subaru forester" autocomplete="off" spellcheck="false">
+              <input class="r-search-input" id="rSearchInput" type="text" value="" autocomplete="off" spellcheck="false" placeholder="Search for cars…">
               <button class="r-clear-btn" id="rClearBtn">×</button>
             </div>
             <div class="r-divider"></div>
@@ -727,7 +727,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
           <div class="r-filter-chip">More filters ⊞</div>
         </div>
         <div class="r-results-bar">
-          <div class="r-count" id="rCount">850 search results for <em id="rCountTerm" style="color:var(--teal)">'subaru forester'</em> in Singapore</div>
+          <div class="r-count" id="rCount">10,000+ used cars in Singapore</div>
           <div class="r-save">Save this search <div class="r-tog"><div class="r-tog-k"></div></div> ⚙</div>
         </div>
         <div class="r-page-body" id="rPageBody">
@@ -1485,8 +1485,7 @@ function handleRegularSearch() {
     // Enter / Search always updates results in-place on Regular SERP.
     // AI SERP is only reached by clicking a suggestion in the dropdown.
     const count = Math.floor(Math.random() * 900 + 100);
-    document.getElementById('rCount').firstChild.textContent = count + ' search results for ';
-    document.getElementById('rCountTerm').textContent = "'" + q + "'";
+    document.getElementById('rCount').innerHTML = count + ' search results for <em id="rCountTerm">\'' + q + '\'</em> in Singapore';
     urlText.textContent = 'carousell.sg/cars/used-cars?q=' + q.toLowerCase().replace(/\s+/g, '+');
     hideRSkel();
   }, 600);
