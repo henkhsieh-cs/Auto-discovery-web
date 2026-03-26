@@ -96,18 +96,72 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
 /* ── VIEWS CONTAINER ─────────────────────────────── */
 .b-content { flex: 1; position: relative; overflow: hidden; background: #fff; display: flex; }
 
-/* Each view is absolutely stacked; transitions handled via JS classes */
+/* Each view is absolutely stacked; JS shows/hides them */
 .view {
   position: absolute; inset: 0; background: #fff;
-  transition: opacity 300ms var(--fade-ease), transform 300ms var(--fade-ease);
   overflow: hidden; display: flex; flex-direction: column;
 }
-.view.hidden { opacity: 0; pointer-events: none; transform: translateY(16px); }
-.view.exit   { opacity: 0; pointer-events: none; transform: translateY(-10px);
-                transition: opacity 200ms ease, transform 200ms ease; }
+.view.hidden { display: none !important; }
 
-/* viewRegular gets its own scroll */
-#viewRegular { overflow-y: auto; overflow-x: hidden; }
+/* viewRegular: scroll lives on rBody, not the view itself */
+#viewRegular { overflow: hidden; }
+
+/* View body — the content below nav; this is what Slide & Dissolves */
+.view-body {
+  flex: 1; overflow: hidden; display: flex; flex-direction: column;
+}
+#rBody { overflow-y: auto; overflow-x: hidden; }
+#rBody::-webkit-scrollbar { width: 4px; }
+#rBody::-webkit-scrollbar-thumb { background: #D8D8D8; border-radius: 2px; }
+/* Exit: quick dissolve out */
+.view-body.vb-exit {
+  opacity: 0; pointer-events: none;
+  transition: opacity 120ms ease-in;
+}
+/* Entry start: invisible, no transition */
+.view-body.vb-hidden {
+  opacity: 0 !important; transition: none !important; pointer-events: none;
+}
+/* Entry settle: fades in smoothly */
+.view-body.vb-settle {
+  opacity: 1;
+  transition: opacity 200ms ease-out;
+}
+
+/* ── Regular SERP search bar slide animation ── */
+@keyframes r-sbar-down {
+  from { transform: translateY(-54px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes r-sbar-up {
+  from { transform: translateY(0); opacity: 1; }
+  to   { transform: translateY(-54px); opacity: 0; }
+}
+
+/* ── Regular SERP skeleton ── */
+@keyframes r-shimmer {
+  0%   { background-position: -700px 0; }
+  100% { background-position: 700px 0; }
+}
+#rPageBody { position: relative; }
+#rSkelGrid {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  padding: 0 0 12px;
+  background: #fff; opacity: 0; pointer-events: none;
+  transition: opacity 180ms ease-out;
+  z-index: 2;
+}
+#rSkelGrid.skel-on { opacity: 1; pointer-events: auto; transition: opacity 0ms; }
+#rSkelGrid.skel-fade { opacity: 0; transition: opacity 220ms ease-out; }
+.r-skel-card {
+  border-radius: 8px; min-height: 170px;
+  background: linear-gradient(90deg, #F0F0F0 25%, #E6E6E6 50%, #F0F0F0 75%);
+  background-size: 1400px 100%;
+  animation: r-shimmer 1.6s infinite ease-in-out;
+}
+#rListings { transition: opacity 220ms ease-out; }
+
 #viewRegular::-webkit-scrollbar { width: 4px; }
 #viewRegular::-webkit-scrollbar-thumb { background: #D8D8D8; border-radius: 2px; }
 
@@ -564,8 +618,9 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
           </div>
         </nav>
 
+        <div class="view-body" id="rBody">
         <!-- Search bar + dropdown -->
-        <div class="r-search-row">
+        <div class="r-search-row" id="rSearchRow">
           <div class="r-search-wrap" id="rSearchWrap">
             <div class="r-search-left">
               <span class="r-search-icon">⌕</span>
@@ -574,7 +629,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
             </div>
             <div class="r-divider"></div>
             <div class="r-location"><span class="r-location-icon">⊙</span> All of Singapore</div>
-            <button class="r-search-btn">Search</button>
+            <button class="r-search-btn" id="rSearchBtn">Search</button>
           </div>
 
           <!-- Two-column dropdown -->
@@ -672,11 +727,19 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
           <div class="r-filter-chip">More filters ⊞</div>
         </div>
         <div class="r-results-bar">
-          <div class="r-count">850 search results for <em style="color:var(--teal)">'subaru forester'</em> in Singapore</div>
+          <div class="r-count" id="rCount">850 search results for <em id="rCountTerm" style="color:var(--teal)">'subaru forester'</em> in Singapore</div>
           <div class="r-save">Save this search <div class="r-tog"><div class="r-tog-k"></div></div> ⚙</div>
         </div>
-        <div class="r-page-body">
-          <div class="r-listings">
+        <div class="r-page-body" id="rPageBody">
+          <div id="rSkelGrid">
+            <div class="r-skel-card"></div>
+            <div class="r-skel-card"></div>
+            <div class="r-skel-card"></div>
+            <div class="r-skel-card"></div>
+            <div class="r-skel-card"></div>
+            <div class="r-skel-card"></div>
+          </div>
+          <div class="r-listings" id="rListings">
             <div class="card"><div class="card-img" style="background:#E4E8EE">🚗</div><div class="card-body"><div class="card-price">S$43,888<span class="card-likes">♡ 12</span></div><div class="card-title">Honda Jazz 1.5 VTIR CVT ABS Dsss</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#5B8DEF">L</div><span class="av-name">Landrover SG · 2h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
             <div class="card"><div class="card-img" style="background:#2B5FA4">🚙</div><div class="card-body"><div class="card-price">S$38,500<span class="card-likes">♡ 8</span></div><div class="card-title">Toyota RAV4 2.0 CVT Sunroof 7-seater</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E87B45">A</div><span class="av-name">AutoPrime · 3h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
             <div class="card"><div class="card-img" style="background:#CEC5B8">🚕</div><div class="card-body"><div class="card-price">S$29,800<span class="card-likes">♡ 24</span></div><div class="card-title">Honda CR-V 2.0 I-VTEC Executive</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#828282">S</div><span class="av-name">SG Motors · 5h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
@@ -688,6 +751,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
             <div class="r-ad-side">Advertisement</div>
           </div>
         </div>
+        </div><!-- /rBody -->
       </div><!-- /viewRegular -->
 
       <!-- ────────────────────────────────────────────
@@ -709,6 +773,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
             </div>
           </nav>
 
+          <div class="view-body" id="aiViewBody">
           <!-- Secondary search bar (hidden by default, revealed on edit) -->
           <div class="ns-container" id="nsContainer">
             <div class="ns-bar" id="nsBar">
@@ -801,6 +866,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
             </main>
 
           </div><!-- /ai-body -->
+          </div><!-- /aiViewBody -->
         </div><!-- /ai-page -->
       </div><!-- /viewAI -->
 
@@ -821,7 +887,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
             </div>
           </nav>
 
-          <div class="em-body">
+          <div class="em-body view-body" id="emViewBody">
             <!-- Sidebar: all chips unselected, back arrow top-left -->
             <aside class="ai-sidebar" id="emSidebar">
               <div class="em-sidebar-top">
@@ -1101,55 +1167,187 @@ function setFlowStep(...active) {
 }
 
 /* ══════════════════════════════════════════════════════
-   VIEW SWITCHING
+   VIEW SWITCHING — Slide & Dissolve on content area only
+   Nav stays stable; only .view-body animates.
 ══════════════════════════════════════════════════════ */
+function getViewBody(viewEl) {
+  return viewEl.querySelector('.view-body');
+}
+
+/* ══════════════════════════════════════════════════════
+   COORDINATED TRANSITIONS — AI ↔ Regular SERP
+   Each element animates independently to show spatial relationship
+══════════════════════════════════════════════════════ */
+const rSearchRow = document.getElementById('rSearchRow');
+const rListings  = document.getElementById('rListings');
+const rSkelGrid  = document.getElementById('rSkelGrid');
+let coordTransitioning = false;
+
+function showRSkel() {
+  rSkelGrid.classList.add('skel-on');
+  rListings.style.opacity = '0';
+}
+
+function hideRSkel() {
+  rSkelGrid.classList.remove('skel-on');
+  rSkelGrid.classList.add('skel-fade');
+  rListings.style.opacity = '1';
+  setTimeout(() => rSkelGrid.classList.remove('skel-fade'), 240);
+}
+
+/* AI SERP → Regular SERP (edit button click) */
+function doAItoRegular() {
+  if (coordTransitioning) return;
+  coordTransitioning = true;
+  currentView = 'regular';
+  setFlowStep(fs1);
+  urlText.textContent = 'carousell.sg/cars/used-cars?q=subaru+forester';
+
+  // Phase 1 — AI elements exit simultaneously
+  // Sidebar slides left
+  aiSidebar.style.transition = 'transform 240ms cubic-bezier(0.4,0,1,1), opacity 200ms ease-in';
+  aiSidebar.style.transform = 'translateX(-210px)';
+  aiSidebar.style.opacity = '0';
+  // Main content fades out
+  aiMain.style.transition = 'opacity 180ms ease-in';
+  aiMain.style.opacity = '0';
+
+  // Phase 2 (t=200ms) — swap views
+  setTimeout(() => {
+    viewAI.classList.add('hidden');
+
+    // Prep Regular SERP: search bar starts above, listings covered by skeleton
+    rSearchRow.style.cssText = 'animation: r-sbar-down 320ms cubic-bezier(0,0,0.15,1) both;';
+    showRSkel();
+    viewRegular.classList.remove('hidden');
+
+    // Phase 3 (t=420ms from now) — reveal real listings
+    setTimeout(() => {
+      hideRSkel();
+      // Cleanup
+      setTimeout(() => {
+        rSearchRow.style.cssText = '';
+        aiSidebar.style.cssText = '';
+        aiMain.style.cssText = '';
+        nsBar.style.cssText = '';
+        isEditMode = false; editAnimating = false;
+        coordTransitioning = false;
+      }, 240);
+    }, 420);
+  }, 200);
+}
+
+/* Regular SERP → AI SERP (prompt selected) */
+function doRegularToAI(promptKey) {
+  if (coordTransitioning) return;
+  coordTransitioning = true;
+  loadPromptToSidebar(promptKey);
+  currentView = 'ai';
+
+  // Phase 1 — Regular SERP elements exit
+  // Search bar slides up
+  rSearchRow.style.cssText = 'animation: r-sbar-up 200ms cubic-bezier(0.4,0,1,1) both;';
+  // Results fade out
+  rListings.style.opacity = '0';
+
+  // Phase 2 (t=180ms) — swap views
+  setTimeout(() => {
+    viewRegular.classList.add('hidden');
+    // Reset regular SERP state
+    rSearchRow.style.cssText = '';
+    rListings.style.opacity = '';
+
+    // Sidebar starts off-screen left
+    aiSidebar.style.cssText = 'transform: translateX(-210px); opacity: 0; transition: none;';
+    // AI main starts invisible
+    aiMain.style.cssText = 'opacity: 0; transition: none;';
+    // Show skeleton in AI results area
+    aiResultsWrap.classList.add('fading');
+
+    viewAI.classList.remove('hidden');
+    // Reset edit mode
+    isEditMode = false; editAnimating = false;
+    nsBar.style.cssText = '';
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      // Sidebar slides in
+      aiSidebar.style.cssText = 'transform: translateX(0); opacity: 1; transition: transform 380ms cubic-bezier(0,0,0.15,1), opacity 320ms cubic-bezier(0,0,0.15,1);';
+      // Main fades in with a slight delay
+      setTimeout(() => {
+        aiMain.style.cssText = 'opacity: 1; transition: opacity 300ms cubic-bezier(0,0,0.15,1);';
+      }, 80);
+    }));
+
+    // Phase 3 (t=360ms) — reveal AI results (remove skeleton)
+    setTimeout(() => {
+      aiResultsWrap.classList.remove('fading');
+      aiResultsWrap.classList.add('settling');
+      setTimeout(() => {
+        aiResultsWrap.classList.remove('settling');
+        aiSidebar.style.cssText = '';
+        aiMain.style.cssText = '';
+        coordTransitioning = false;
+      }, 320);
+    }, 360);
+  }, 180);
+}
+
 function switchTo(target, promptKey) {
-  const from = currentView === 'regular' ? viewRegular
-             : currentView === 'ai'      ? viewAI
-             : viewEmpty;
+  const fromView = currentView === 'regular' ? viewRegular
+                 : currentView === 'ai'      ? viewAI
+                 : viewEmpty;
   currentView = target;
 
-  // Populate AI sidebar before showing
-  if (target === 'ai' && promptKey) {
-    loadPromptToSidebar(promptKey);
-  }
+  if (target === 'ai' && promptKey) loadPromptToSidebar(promptKey);
 
-  // Exit animation on current view
-  from.classList.add('exit');
+  const toView = target === 'regular' ? viewRegular
+               : target === 'ai'      ? viewAI
+               : viewEmpty;
 
-  const to = target === 'regular' ? viewRegular
-           : target === 'ai'      ? viewAI
-           : viewEmpty;
-  to.scrollTop = 0;
+  if (fromView === toView) return;
+
   aiMain.scrollTop = 0;
 
+  const fromBody = getViewBody(fromView);
+  const toBody   = getViewBody(toView);
+
+  // Step 1 — dissolve out (120ms)
+  fromBody.classList.add('vb-exit');
+
   setTimeout(() => {
-    from.classList.remove('exit');
-    from.classList.add('hidden');
-    to.classList.remove('hidden');
+    // Step 2 — swap views; new body starts invisible
+    fromView.classList.add('hidden');
+    fromBody.classList.remove('vb-exit');
+    toView.classList.remove('hidden');
+    toBody.classList.add('vb-hidden');
+
+    // Step 3 — next paint: fade in (200ms)
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      toBody.classList.remove('vb-hidden');
+      toBody.classList.add('vb-settle');
+      setTimeout(() => toBody.classList.remove('vb-settle'), 220);
+    }));
 
     if (target === 'regular') {
       urlText.textContent = 'carousell.sg/cars/used-cars?q=subaru+forester';
       setFlowStep(fs1);
     }
-
-    // Reset edit mode state on AI view if we just arrived
     if (target === 'ai') {
-      isEditMode = false;
-      editAnimating = false;
-      // Ensure sidebar is visible, nsBar is hidden
-      aiSidebar.style.cssText = '';
-      nsBar.style.cssText = '';
+      isEditMode = false; editAnimating = false;
+      aiSidebar.style.cssText = ''; nsBar.style.cssText = '';
     }
-  }, 180);
+  }, 130);
 }
 
 /* ══════════════════════════════════════════════════════
    LOAD PROMPT INTO AI SIDEBAR + RESULTS
 ══════════════════════════════════════════════════════ */
+let currentPromptKey = null;
+
 function loadPromptToSidebar(key) {
   const d = PROMPTS[key];
   if (!d) return;
+  currentPromptKey = key;
   urlText.textContent = d.url;
 
   // Sidebar query text
@@ -1241,13 +1439,35 @@ document.addEventListener('mousedown', e => {
   }
 });
 
+// Search button + Enter key on Regular SERP
+function handleRegularSearch() {
+  const q = rSearchInput.value.trim();
+  if (!q) return;
+  closeDropdown();
+  if (isSemanticQuery(q)) {
+    const key = matchPromptKey(q);
+    setFlowStep(fs3, fs5);
+    doRegularToAI(key || 'asian-suv');
+  } else {
+    // Keyword search — update results in place
+    const count = Math.floor(Math.random() * 900 + 100);
+    document.getElementById('rCount').firstChild.textContent = count + ' search results for ';
+    document.getElementById('rCountTerm').textContent = "'" + q + "'";
+    urlText.textContent = 'carousell.sg/cars/used-cars?q=' + q.toLowerCase().replace(/\s+/g, '+');
+  }
+}
+document.getElementById('rSearchBtn').addEventListener('click', handleRegularSearch);
+rSearchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleRegularSearch();
+});
+
 // Prompt clicks in regular SERP dropdown → navigate to AI SERP
 document.querySelectorAll('.dd-prompt').forEach(el => {
   el.addEventListener('click', () => {
     const key = el.dataset.prompt;
     closeDropdown();
     setFlowStep(fs3, fs5);
-    switchTo('ai', key);
+    doRegularToAI(key);
   });
 });
 
@@ -1501,8 +1721,14 @@ function closeEditMode() {
   }, 520);
 }
 
-// Wire up edit button in sidebar
-aiEditBtn.addEventListener('click', openEditMode);
+// Wire up edit button in sidebar — coordinated transition back to Regular SERP
+aiEditBtn.addEventListener('click', () => {
+  const d = currentPromptKey ? PROMPTS[currentPromptKey] : null;
+  const q = d ? d.promptText : '';
+  rSearchInput.value = q;
+  rSearchWrap.classList.toggle('has-text', !!q);
+  doAItoRegular();
+});
 
 /* ══════════════════════════════════════════════════════
    AI EMPTY — chip interactions, sentence builder, navigation

@@ -317,6 +317,28 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
 .ai-results-wrap { transition: opacity 160ms ease, transform 160ms ease; }
 .ai-results-wrap.fading { opacity: 0; transform: translateY(5px); }
 .ai-results-wrap.settling { transition: opacity 260ms var(--fade-ease), transform 260ms var(--fade-ease); }
+
+/* ── Coordinated Regular ↔ AI transitions ── */
+@keyframes f-srow-down { from { transform: translateY(-54px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes f-srow-up   { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-54px); opacity: 0; } }
+@keyframes f-hero-down { from { transform: translateY(-44px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes f-hero-up   { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-44px); opacity: 0; } }
+@keyframes f-shimmer   { 0% { background-position: -700px 0; } 100% { background-position: 700px 0; } }
+
+#rPageBody { position: relative; }
+#fSkelGrid {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  padding: 0; background: #fff;
+  opacity: 0; pointer-events: none; transition: opacity 180ms ease-out; z-index: 2;
+}
+#fSkelGrid.skel-on { opacity: 1; pointer-events: auto; transition: opacity 0ms; }
+#fSkelGrid.skel-fade { opacity: 0; transition: opacity 220ms ease-out; }
+.f-skel-card {
+  border-radius: 9px; min-height: 160px;
+  background: linear-gradient(90deg, #F0F0F0 25%, #E6E6E6 50%, #F0F0F0 75%);
+  background-size: 1400px 100%; animation: f-shimmer 1.6s infinite ease-in-out;
+}
 </style>
 </head>
 <body>
@@ -403,7 +425,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
         </nav>
 
         <!-- Search bar + dropdown -->
-        <div class="r-search-row">
+        <div class="r-search-row" id="rSearchRow">
           <div class="r-search-wrap" id="rSearchWrap">
             <div class="r-search-left">
               <span class="r-search-icon">⌕</span>
@@ -414,12 +436,12 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
             <div class="r-location">
               <span class="r-location-icon">⊙</span> All of Singapore
             </div>
-            <button class="r-search-btn">Search</button>
+            <button class="r-search-btn" id="rSearchBtn">Search</button>
           </div>
 
           <!-- Dropdown -->
           <div class="dropdown" id="dropdown">
-            <div class="dd-left">
+            <div class="dd-left" id="ddLeft">
               <div class="dd-item">
                 <span class="dd-item-icon">⌕</span>
                 <div class="dd-item-body">
@@ -512,17 +534,25 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
           <div class="r-filter-chip">More filters ⊞</div>
         </div>
         <div class="r-results-bar">
-          <div class="r-count">850 search results for <em>'subaru forester'</em> in Singapore</div>
+          <div class="r-count" id="rCount">850 search results for <em id="rCountTerm">'subaru forester'</em> in Singapore</div>
           <div class="r-save">Save this search <div class="r-tog"><div class="r-tog-k"></div></div> ⚙</div>
         </div>
-        <div class="r-page-body">
-          <div class="r-listings">
+        <div class="r-page-body" id="rPageBody">
+          <div class="r-listings" id="rListings">
             <div class="card"><div class="card-img" style="background:#E4E8EE">🚗</div><div class="card-body"><div class="card-price">S$43,888<span class="card-likes">♡ 12</span></div><div class="card-title">Honda Jazz 1.5 VTIR CVT ABS Dsss</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#5B8DEF">L</div><span class="av-name">Landrover SG · 2h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
             <div class="card"><div class="card-img" style="background:#2B5FA4">🚙</div><div class="card-body"><div class="card-price">S$38,500<span class="card-likes">♡ 8</span></div><div class="card-title">Toyota RAV4 2.0 CVT Sunroof 7-seater</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E87B45">A</div><span class="av-name">AutoPrime · 3h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
             <div class="card"><div class="card-img" style="background:#CEC5B8">🚕</div><div class="card-body"><div class="card-price">S$29,800<span class="card-likes">♡ 24</span></div><div class="card-title">Honda CR-V 2.0 I-VTEC Executive</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#828282">S</div><span class="av-name">SG Motors · 5h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
             <div class="card"><div class="card-img" style="background:#B0392B">🚗</div><div class="card-body"><div class="card-price">S$35,200<span class="card-likes">♡ 6</span></div><div class="card-title">Mazda CX-5 2.0 SKYACTIV-G Luxury</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#E8439A">M</div><span class="av-name">MaxAuto · 1h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
             <div class="card"><div class="card-img" style="background:#5A6D7D">🚙</div><div class="card-body"><div class="card-price">S$31,500<span class="card-likes">♡ 11</span></div><div class="card-title">Subaru Forester 2.0 CVT EyeSight</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#2ECC71">S</div><span class="av-name">SubaruSG · 4h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
             <div class="card"><div class="card-img" style="background:#AAB5B6">🚕</div><div class="card-body"><div class="card-price">S$37,900<span class="card-likes">♡ 7</span></div><div class="card-title">Nissan X-Trail 2.5 4WD Luxury Pkg</div><div class="card-foot"><div class="card-seller"><div class="av" style="background:#9B59B6">N</div><span class="av-name">NissanDirect · 6h</span></div><span class="card-chat">💬 Chat</span></div></div></div>
+          </div>
+          <div id="fSkelGrid">
+            <div class="f-skel-card"></div>
+            <div class="f-skel-card"></div>
+            <div class="f-skel-card"></div>
+            <div class="f-skel-card"></div>
+            <div class="f-skel-card"></div>
+            <div class="f-skel-card"></div>
           </div>
           <div class="r-side">
             <div class="r-ad-side">Advertisement</div>
@@ -777,9 +807,12 @@ function switchTo(target, promptKey) {
   }, 180);
 }
 
+let currentPromptKey = null;
+
 function loadPrompt(key) {
   const d = PROMPTS[key];
   if (!d) return;
+  currentPromptKey = key;
   urlText.textContent = d.url;
 
   // Hero
@@ -816,6 +849,7 @@ const rSearchInput = document.getElementById('rSearchInput');
 const rSearchWrap  = document.getElementById('rSearchWrap');
 const rClearBtn    = document.getElementById('rClearBtn');
 const dropdown     = document.getElementById('dropdown');
+const ddLeft       = document.getElementById('ddLeft');
 const ddAiBtn      = document.getElementById('ddAiBtn');
 
 function openDropdown() {
@@ -827,24 +861,92 @@ function closeDropdown() {
   if (currentView === 'regular') setFlowStep(fs1);
 }
 
+function buildKeywordSuggestions(q) {
+  const e = q.replace(/</g, '&lt;');
+  return `
+    <div class="dd-item"><span class="dd-item-icon">⌕</span><div class="dd-item-body"><div class="dd-item-main"><strong>${e}</strong> in Used cars</div></div></div>
+    <div class="dd-item"><span class="dd-item-icon">⌕</span><div class="dd-item-body"><div class="dd-item-main"><strong>${e}</strong> in New cars</div></div></div>
+    <div class="dd-item"><span class="dd-item-icon">⌕</span><div class="dd-item-body"><div class="dd-item-main"><strong>${e}</strong> sj</div></div></div>
+    <div class="dd-item"><span class="dd-item-icon">⌕</span><div class="dd-item-body"><div class="dd-item-main"><strong>${e}</strong> xt</div></div></div>
+    <div class="dd-separator"></div>
+    <div class="dd-item"><span class="dd-item-icon">▦</span><div class="dd-item-body"><div class="dd-item-main">Compact SUV</div><div class="dd-item-sub">Includes ${e} and 10+ models</div></div></div>
+    <div class="dd-item"><span class="dd-item-icon">▦</span><div class="dd-item-body"><div class="dd-item-main">Premium compact SUV</div><div class="dd-item-sub">Enjoy premium with the price of ${e}</div></div></div>
+    <div class="dd-separator"></div>
+    <div class="dd-item"><span class="dd-item-icon">◎</span><div class="dd-item-body"><div class="dd-item-main">Search for user '${e}' instead</div></div></div>`;
+}
+
+function buildDdAiSuggestions(q) {
+  const key = matchPromptKey(q);
+  const d = key ? PROMPTS[key] : null;
+  const cap = q.charAt(0).toUpperCase() + q.slice(1);
+  const items = [
+    cap,
+    d ? d.promptText : "I'm looking for " + q,
+    d ? 'Reliable ' + q.split(' ').slice(0, 3).join(' ') + ' for daily use' : q + ' — spacious and fuel-efficient',
+  ];
+  const seen = new Set();
+  return items
+    .filter(t => { if (seen.has(t)) return false; seen.add(t); return true; })
+    .map(t => `
+      <div class="dd-item dd-ai-item" style="white-space:normal" data-prompt-key="${key || ''}">
+        <span class="dd-item-icon" style="color:#7B9FD4;align-self:flex-start;margin-top:3px">✦</span>
+        <div class="dd-item-body"><div class="dd-item-main" style="white-space:normal;font-weight:500;color:#333">${t.replace(/</g, '&lt;')}</div></div>
+      </div>`).join('');
+}
+
+function updateDropdown(q) {
+  const semantic = isSemanticQuery(q);
+  dropdown.classList.toggle('semantic', semantic);
+  ddLeft.innerHTML = semantic ? buildDdAiSuggestions(q) : buildKeywordSuggestions(q);
+  if (semantic) {
+    ddLeft.querySelectorAll('.dd-ai-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const k = el.dataset.promptKey || matchPromptKey(q) || 'asian-suv';
+        closeDropdown();
+        setFlowStep(fs3, fs5);
+        doRegularToAI(k);
+      });
+    });
+  }
+}
+
 rSearchInput.addEventListener('focus', () => {
-  if (rSearchInput.value.trim()) openDropdown();
+  const v = rSearchInput.value.trim();
+  if (v) { updateDropdown(v); openDropdown(); }
 });
 rSearchInput.addEventListener('input', () => {
   const v = rSearchInput.value.trim();
   rSearchWrap.classList.toggle('has-text', !!v);
-  if (v) openDropdown(); else closeDropdown();
-  // Update bold keyword in suggestions
-  ['ddQ','ddQ2','ddQ3','ddQ4'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = v || 'Subaru forester';
-  });
+  if (v) { updateDropdown(v); openDropdown(); }
+  else   { closeDropdown(); }
 });
 rClearBtn.addEventListener('click', () => {
   rSearchInput.value = '';
   rSearchWrap.classList.remove('has-text');
   closeDropdown();
   rSearchInput.focus();
+});
+
+// Search button + Enter key on Regular SERP
+function handleRegularSearch() {
+  const q = rSearchInput.value.trim();
+  if (!q) return;
+  closeDropdown();
+  if (isSemanticQuery(q)) {
+    const key = matchPromptKey(q);
+    setFlowStep(fs3, fs5);
+    doRegularToAI(key || 'asian-suv');
+  } else {
+    // Keyword search — update results in place
+    const count = Math.floor(Math.random() * 900 + 100);
+    document.getElementById('rCount').firstChild.textContent = count + ' search results for ';
+    document.getElementById('rCountTerm').textContent = "'" + q + "'";
+    urlText.textContent = 'carousell.sg/cars/used-cars?q=' + q.toLowerCase().replace(/\s+/g, '+');
+  }
+}
+document.getElementById('rSearchBtn').addEventListener('click', handleRegularSearch);
+rSearchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleRegularSearch();
 });
 
 // Click outside to close
@@ -860,7 +962,7 @@ document.querySelectorAll('.dd-prompt').forEach(el => {
     const key = el.dataset.prompt;
     closeDropdown();
     setFlowStep(fs3, fs5);
-    switchTo('ai', key);
+    doRegularToAI(key);
   });
 });
 
@@ -904,36 +1006,119 @@ function updateAIScroll() {
   }
 }
 
-function openAIHeroEdit() {
-  aiEditing = true;
-  aiHero.classList.add('editing');
-  document.getElementById('aiHeroInput').focus({ preventScroll: true });
-}
-function closeAIHeroEdit() {
-  aiEditing = false;
-  aiHero.classList.remove('editing');
-}
-function openAISbEdit() {
-  aiEditing = true;
-  aiSbInner.classList.add('editing');
-  document.getElementById('aiSbInput').focus({ preventScroll: true });
-}
-function closeAISbEdit() {
-  aiEditing = false;
-  aiSbInner.classList.remove('editing');
+function openAIHeroEdit() { goBackToRegularWithPrompt(); }
+function closeAIHeroEdit() {}
+function openAISbEdit() { goBackToRegularWithPrompt(); }
+function closeAISbEdit() {}
+
+function goBackToRegularWithPrompt() {
+  const d = currentPromptKey ? PROMPTS[currentPromptKey] : null;
+  const q = d ? d.promptText : '';
+  rSearchInput.value = q;
+  rSearchWrap.classList.toggle('has-text', !!q);
+  doAItoRegular();
 }
 
 function bindAIPencils() {
   const hp = document.getElementById('aiHeroPencil');
   const sp = document.getElementById('aiSbPencil');
-  if (hp) hp.onclick = openAIHeroEdit;
-  if (sp) sp.onclick = openAISbEdit;
+  if (hp) hp.onclick = goBackToRegularWithPrompt;
+  if (sp) sp.onclick = goBackToRegularWithPrompt;
 }
 bindAIPencils();
 
 /* ── Hero dropdown ── */
 const aiHeroDd = document.getElementById('aiHeroDd');
 const aiResultsWrap = document.getElementById('aiResultsWrap');
+
+/* ── Coordinated Regular ↔ AI transitions ── */
+const rSearchRow = document.getElementById('rSearchRow');
+const rListings  = document.getElementById('rListings');
+const fSkelGrid  = document.getElementById('fSkelGrid');
+let coordTransitioning = false;
+
+function showFSkel() {
+  fSkelGrid.classList.add('skel-on');
+  rListings.style.opacity = '0';
+}
+function hideFSkel() {
+  fSkelGrid.classList.remove('skel-on');
+  fSkelGrid.classList.add('skel-fade');
+  rListings.style.opacity = '1';
+  setTimeout(() => fSkelGrid.classList.remove('skel-fade'), 240);
+}
+
+function instantSwap(fromView, toView) {
+  fromView.style.cssText = 'transition: none !important; opacity: 0 !important; pointer-events: none !important;';
+  fromView.classList.add('hidden');
+  toView.style.cssText = 'transition: none !important; opacity: 1 !important; transform: none !important;';
+  toView.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    fromView.style.cssText = '';
+    toView.style.cssText = '';
+  });
+}
+
+function doRegularToAI(promptKey) {
+  if (coordTransitioning) return;
+  coordTransitioning = true;
+  loadPrompt(promptKey);
+  currentView = 'ai';
+
+  // Phase 1 — search row slides up, listings fade
+  rSearchRow.style.cssText = 'animation: f-srow-up 200ms cubic-bezier(0.4,0,1,1) both;';
+  rListings.style.opacity = '0';
+
+  // Phase 2 (t=180ms) — swap views, hero slides in
+  setTimeout(() => {
+    rSearchRow.style.cssText = '';
+    rListings.style.opacity = '';
+    viewAI.scrollTop = 0;
+    resetAIState(viewAI);
+    aiHero.style.cssText = 'animation: f-hero-down 320ms cubic-bezier(0,0,0.15,1) both;';
+    aiResultsWrap.classList.add('fading');
+    instantSwap(viewRegular, viewAI);
+
+    // Phase 3 (t=500ms) — real AI results appear
+    setTimeout(() => {
+      aiResultsWrap.classList.remove('fading');
+      aiResultsWrap.classList.add('settling');
+      setTimeout(() => {
+        aiResultsWrap.classList.remove('settling');
+        aiHero.style.cssText = '';
+        coordTransitioning = false;
+      }, 320);
+    }, 320);
+  }, 180);
+}
+
+function doAItoRegular() {
+  if (coordTransitioning) return;
+  coordTransitioning = true;
+  currentView = 'regular';
+  setFlowStep(fs1);
+  urlText.textContent = 'carousell.sg/cars/used-cars?q=subaru+forester';
+
+  // Phase 1 — hero slides up
+  aiHero.style.cssText = 'animation: f-hero-up 200ms cubic-bezier(0.4,0,1,1) both;';
+
+  // Phase 2 (t=180ms) — swap views, search row slides in
+  setTimeout(() => {
+    aiHero.style.cssText = '';
+    rSearchRow.style.cssText = 'animation: f-srow-down 320ms cubic-bezier(0,0,0.15,1) both;';
+    showFSkel();
+    instantSwap(viewAI, viewRegular);
+
+    // Phase 3 (t=420ms) — real listings appear
+    setTimeout(() => {
+      hideFSkel();
+      setTimeout(() => {
+        rSearchRow.style.cssText = '';
+        coordTransitioning = false;
+      }, 240);
+    }, 420);
+  }, 180);
+}
 
 function openHeroDd() { aiHeroDd.classList.add('open'); }
 function closeHeroDd() { aiHeroDd.classList.remove('open'); }
