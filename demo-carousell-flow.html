@@ -174,9 +174,13 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
 
 /* Sticky bar */
 .sb-outer { height: 0; overflow: hidden; transition: height var(--spring-dur) var(--spring); }
-.sb-outer.visible { height: 52px; }
-.sb-inner { height: 52px; padding: 0 18px; display: flex; align-items: center; position: relative; border-top: 1px solid var(--border); box-shadow: 0 3px 10px rgba(0,0,0,.06); }
-.sb-text { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; text-overflow: ellipsis; transition: opacity var(--fade-out) ease, transform var(--fade-out) ease; }
+.sb-outer.visible { height: 52px; transition: height 220ms cubic-bezier(0,0,0.15,1); }
+.sb-outer.visible:hover { height: 82px; }
+.sb-inner { min-height: 52px; padding: 0 18px; display: flex; flex-direction: column; justify-content: center; gap: 0; position: relative; border-top: 1px solid var(--border); box-shadow: 0 3px 10px rgba(0,0,0,.06); }
+.sb-chips { display: flex; gap: 5px; flex-wrap: nowrap; overflow: hidden; opacity: 0; max-height: 0; transform: translateY(-4px); pointer-events: none; transition: opacity 180ms ease, max-height 180ms ease, transform 180ms ease, margin-bottom 180ms ease; }
+.sb-outer.visible:hover .sb-chips { opacity: 1; max-height: 26px; transform: translateY(0); pointer-events: auto; margin-bottom: 8px; }
+.sb-chips .chip { height: 22px; padding: 0 9px; font-size: 10px; }
+.sb-text { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; overflow: hidden; font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; text-overflow: ellipsis; transition: opacity var(--fade-out) ease, transform var(--fade-out) ease; padding-top: 4px; }
 .sb-text .hi { color: var(--teal); flex-shrink: 0; }
 .sb-pencil { font-size: 14px; color: #C0C0C0; cursor: pointer; flex-shrink: 0; padding: 3px 5px; border-radius: 5px; line-height: 1; transition: color 150ms, background 150ms; }
 .sb-pencil:hover { color: var(--teal); background: rgba(29,173,160,.09); }
@@ -582,6 +586,13 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
                 I'm looking for an <span class="hi" id="aiSbHi">Asian SUV below 30K</span>
                 <span class="sb-pencil" id="aiSbPencil">✎</span>
               </div>
+              <div class="sb-chips" id="aiSbChips">
+                <div class="chip act">Asian</div>
+                <div class="chip act">SUV</div>
+                <div class="chip act">Below $30,000</div>
+                <div class="chip act">5yr+ COE</div>
+                <div class="chip act">Family-friendly</div>
+              </div>
               <div class="sb-search">
                 <input id="aiSbInput" type="text">
                 <button class="sb-btn" id="aiSbBtn">Search</button>
@@ -830,11 +841,13 @@ function loadPrompt(key) {
     "<span class='sb-pencil' id='aiSbPencil'>✎</span>";
   document.getElementById('aiSbInput').value = d.promptText;
 
-  // Chips
+  // Chips (hero + sticky bar)
   const chipRow = document.getElementById('aiChipRow');
   chipRow.innerHTML = d.chips.map(c =>
     `<div class="chip act">${c}</div>`).join('') +
     `<div class="chip add-chip">Add +</div>`;
+  document.getElementById('aiSbChips').innerHTML = d.chips.map(c =>
+    `<div class="chip act">${c}</div>`).join('');
 
   // Results
   document.getElementById('aiCount').textContent = d.count;
