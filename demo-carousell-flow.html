@@ -932,12 +932,17 @@ function handleRegularSearch() {
   const q = rSearchInput.value.trim();
   if (!q) return;
   closeDropdown();
-  // Enter / Search always updates results in-place on Regular SERP.
-  // AI SERP is only reached by clicking a suggestion in the dropdown.
-  const count = Math.floor(Math.random() * 900 + 100);
-  document.getElementById('rCount').firstChild.textContent = count + ' search results for ';
-  document.getElementById('rCountTerm').textContent = "'" + q + "'";
-  urlText.textContent = 'carousell.sg/cars/used-cars?q=' + q.toLowerCase().replace(/\s+/g, '+');
+  // Show skeleton briefly so users get clear feedback that Search fired.
+  showFSkel();
+  setTimeout(() => {
+    // Enter / Search always updates results in-place on Regular SERP.
+    // AI SERP is only reached by clicking a suggestion in the dropdown.
+    const count = Math.floor(Math.random() * 900 + 100);
+    document.getElementById('rCount').firstChild.textContent = count + ' search results for ';
+    document.getElementById('rCountTerm').textContent = "'" + q + "'";
+    urlText.textContent = 'carousell.sg/cars/used-cars?q=' + q.toLowerCase().replace(/\s+/g, '+');
+    hideFSkel();
+  }, 600);
 }
 document.getElementById('rSearchBtn').addEventListener('click', handleRegularSearch);
 rSearchInput.addEventListener('keydown', e => {
