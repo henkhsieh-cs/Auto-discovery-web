@@ -932,17 +932,12 @@ function handleRegularSearch() {
   const q = rSearchInput.value.trim();
   if (!q) return;
   closeDropdown();
-  if (isSemanticQuery(q)) {
-    const key = matchPromptKey(q);
-    setFlowStep(fs3, fs5);
-    doRegularToAI(key || 'asian-suv');
-  } else {
-    // Keyword search — update results in place
-    const count = Math.floor(Math.random() * 900 + 100);
-    document.getElementById('rCount').firstChild.textContent = count + ' search results for ';
-    document.getElementById('rCountTerm').textContent = "'" + q + "'";
-    urlText.textContent = 'carousell.sg/cars/used-cars?q=' + q.toLowerCase().replace(/\s+/g, '+');
-  }
+  // Enter / Search always updates results in-place on Regular SERP.
+  // AI SERP is only reached by clicking a suggestion in the dropdown.
+  const count = Math.floor(Math.random() * 900 + 100);
+  document.getElementById('rCount').firstChild.textContent = count + ' search results for ';
+  document.getElementById('rCountTerm').textContent = "'" + q + "'";
+  urlText.textContent = 'carousell.sg/cars/used-cars?q=' + q.toLowerCase().replace(/\s+/g, '+');
 }
 document.getElementById('rSearchBtn').addEventListener('click', handleRegularSearch);
 rSearchInput.addEventListener('keydown', e => {
