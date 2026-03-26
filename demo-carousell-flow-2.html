@@ -634,7 +634,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
 
           <!-- Two-column dropdown -->
           <div class="dropdown" id="dropdown">
-            <div class="dd-left">
+            <div class="dd-left" id="ddLeft">
               <div class="dd-item">
                 <span class="dd-item-icon">⌕</span>
                 <div class="dd-item-body">
@@ -1415,17 +1415,52 @@ function closeDropdown() {
   if (currentView === 'regular') setFlowStep(fs1);
 }
 
+const ddLeft = document.getElementById('ddLeft');
+
+function buildDdAiSuggestions(q) {
+  const key = matchPromptKey(q);
+  const d = key ? PROMPTS[key] : null;
+  const cap = q.charAt(0).toUpperCase() + q.slice(1);
+  const items = [
+    cap,
+    d ? d.promptText : "I'm looking for " + q,
+    d ? 'Reliable ' + q.split(' ').slice(0, 3).join(' ') + ' for daily use' : q + ' — spacious and fuel-efficient',
+  ];
+  const seen = new Set();
+  return items
+    .filter(t => { if (seen.has(t)) return false; seen.add(t); return true; })
+    .map(t => `
+      <div class="dd-item dd-ai-item" style="white-space:normal" data-prompt-key="${key || ''}">
+        <span class="dd-item-icon" style="color:#7B9FD4;align-self:flex-start;margin-top:3px">✦</span>
+        <div class="dd-item-body"><div class="dd-item-main" style="white-space:normal;font-weight:500;color:#333">${t.replace(/</g, '&lt;')}</div></div>
+      </div>`).join('');
+}
+
+function updateDropdown(q) {
+  const semantic = isSemanticQuery(q);
+  dropdown.classList.toggle('semantic', semantic);
+  ddLeft.innerHTML = semantic ? buildDdAiSuggestions(q) : buildKeywordSuggestions(q);
+  if (semantic) {
+    ddLeft.querySelectorAll('.dd-ai-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const k = el.dataset.promptKey || matchPromptKey(q) || 'asian-suv';
+        closeDropdown();
+        setFlowStep(fs3, fs5);
+        doRegularToAI(k);
+      });
+    });
+  }
+}
+
 rSearchInput.addEventListener('focus', () => {
-  if (rSearchInput.value.trim()) openDropdown();
+  const v = rSearchInput.value.trim();
+  if (v) { updateDropdown(v); openDropdown(); }
 });
 rSearchInput.addEventListener('input', () => {
   const v = rSearchInput.value.trim();
   rSearchWrap.classList.toggle('has-text', !!v);
-  if (v) openDropdown(); else closeDropdown();
-  ['ddQ','ddQ2','ddQ3','ddQ4'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = v || 'Subaru forester';
-  });
+  if (v) { updateDropdown(v); openDropdown(); }
+  else   { closeDropdown(); }
 });
 rClearBtn.addEventListener('click', () => {
   rSearchInput.value = '';
