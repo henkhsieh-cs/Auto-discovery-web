@@ -220,6 +220,8 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
 .dropdown.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
 .dd-left { flex: 1; padding: 6px 0; border-right: 1px solid var(--border); }
+.dropdown.semantic .dd-right { display: none; }
+.dropdown.semantic .dd-left { border-right: none; }
 .dd-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; cursor: pointer; transition: background 100ms; }
 .dd-item:hover { background: #F5F5F5; }
 .dd-item-icon { color: #C8C8C8; font-size: 13px; flex-shrink: 0; }
