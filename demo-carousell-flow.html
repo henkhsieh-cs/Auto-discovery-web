@@ -26,7 +26,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
 .panel.collapsed { width: 0; min-width: 0; overflow: hidden; border-right: none; }
 .panel::-webkit-scrollbar { width: 3px; }
 .panel::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 2px; }
-.panel-toggle { position: absolute; left: 10px; top: 10px; transform: none; width: 32px; height: 32px; background: #1A1A1A; border: 1px solid #2C2C2C; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 500; color: #888; font-size: 14px; user-select: none; transition: background 150ms, color 150ms; }
+.panel-toggle { position: fixed; left: 10px; top: 10px; width: 32px; height: 32px; background: #1A1A1A; border: 1px solid #2C2C2C; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: #888; font-size: 14px; user-select: none; transition: background 150ms, color 150ms; }
 .panel-toggle:hover { background: #2A2A2A; color: #CCC; }
 .p-header { padding: 22px 18px 14px; border-bottom: 1px solid #1C1C1C; }
 .p-eyebrow { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #3A3A3A; margin-bottom: 5px; }
@@ -408,6 +408,7 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
 <!-- ────────────────────────────────────────────────
      STAGE + BROWSER
 ───────────────────────────────────────────────── -->
+<button class="panel-toggle" id="panelToggle" title="Toggle panel">☰</button>
 <div class="stage">
   <div class="browser">
     <div class="b-chrome">
@@ -421,7 +422,6 @@ body { font-family: 'Inter', sans-serif; background: #0F0F0F; height: 100vh; dis
     </div>
 
     <div class="b-content">
-      <button class="panel-toggle" id="panelToggle" title="Toggle panel">☰</button>
 
       <!-- ── VIEW 1: REGULAR SERP ── -->
       <div class="view" id="viewRegular">
