@@ -790,6 +790,10 @@ const fs5 = document.getElementById('fs5');
 
 let currentView = 'regular';
 
+function aOrAn(str) {
+  return /^[aeiou]/i.test((str || '').trim()) ? 'an' : 'a';
+}
+
 function setFlowStep(...active) {
   [fs1,fs2,fs3,fs4,fs5].forEach(f => f.classList.remove('on'));
   active.forEach(el => el && el.classList.add('on'));
@@ -837,14 +841,14 @@ function loadPrompt(key) {
 
   // Hero
   document.getElementById('aiHeroPrompt').innerHTML =
-    "I'm looking for an <span class='hi' id='aiHeroHi'>" + d.hiText + "</span>";
+    "I'm looking for " + aOrAn(d.hiText) + " <span class='hi' id='aiHeroHi'>" + d.hiText + "</span>";
   const aiInp = document.getElementById('aiHeroInput');
   aiInp.value = d.promptText;
   document.getElementById('aiHsbLeft').classList.toggle('has-text', !!d.promptText);
 
   // Sticky bar
   document.getElementById('aiSbText').innerHTML =
-    "I'm looking for a <span class='hi'>" + d.sbText + "</span>" +
+    "I'm looking for " + aOrAn(d.sbText) + " <span class='hi'>" + d.sbText + "</span>" +
     "<span class='sb-pencil' id='aiSbPencil'>✎</span>";
   document.getElementById('aiSbInput').value = d.promptText;
 
