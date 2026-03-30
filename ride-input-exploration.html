@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Describe your ideal ride — Input Exploration</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0F0F0F;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 48px 32px 80px;
+    color: #fff;
+  }
+
+  .page-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+    letter-spacing: -0.3px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 48px;
+  }
+
+  .options-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: flex-start;
+  }
+
+  .option-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .option-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #555;
+  }
+
+  .option-name {
+    font-size: 13px;
+    color: #888;
+    margin-top: 2px;
+    font-weight: 400;
+  }
+
+  /* SIDEBAR CARD */
+  .sidebar-card {
+    width: 300px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  /* PROMPT PREVIEW */
+  .prompt-preview {
+    background: #F5F5F5;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.6;
+    min-height: 38px;
+  }
+
+  .prompt-preview .prompt-star {
+    color: #1DADA0;
+    margin-right: 4px;
+  }
+
+  .prompt-preview .teal-term {
+    color: #1DADA0;
+    font-weight: 500;
+    background: rgba(29, 173, 160, 0.1);
+    border-radius: 4px;
+    padding: 1px 4px;
+  }
+
+  /* CHIP STYLES */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+
+  .chip-unselected {
+    background: #fff;
+    border: 1.5px solid #E0E0E0;
+    color: #333;
+  }
+  .chip-unselected:hover {
+    border-color: #1DADA0;
+    color: #1DADA0;
+  }
+
+  .chip-selected {
+    background: #1DADA0;
+    border: 1.5px solid #1DADA0;
+    color: #fff;
+  }
+
+  .chip-selected .chip-remove {
+    font-size: 13px;
+    line-height: 1;
+    opacity: 0.8;
+    margin-left: 2px;
+  }
+
+  .chip-add {
+    background: transparent;
+    border: 1.5px dashed #C0C0C0;
+    color: #999;
+  }
+  .chip-add:hover {
+    border-color: #1DADA0;
+    color: #1DADA0;
+  }
+
+  .divider {
+    height: 1px;
+    background: #F0F0F0;
+    margin: 2px 0;
+  }
+
+  /* ======= OPTION A ======= */
+  .selected-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 28px;
+  }
+
+  .suggestion-rail-wrapper {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .suggestion-rail {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    scroll-behavior: smooth;
+  }
+  .suggestion-rail::-webkit-scrollbar { display: none; }
+
+  /* ======= OPTION B ======= */
+  .tag-input-wrapper {
+    border: 1.5px solid #E0E0E0;
+    border-radius: 10px;
+    padding: 6px 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: center;
+    cursor: text;
+    transition: border-color 0.15s;
+    min-height: 40px;
+    position: relative;
+  }
+  .tag-input-wrapper.focused {
+    border-color: #1DADA0;
+    box-shadow: 0 0 0 3px rgba(29,173,160,0.1);
+  }
+
+  .tag-input-field {
+    border: none;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: #333;
+    min-width: 80px;
+    flex: 1;
+    background: transparent;
+  }
+
+  .autocomplete-dropdown {
+    background: #fff;
+    border: 1.5px solid #E8E8E8;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    display: none;
+  }
+  .autocomplete-dropdown.visible { display: block; }
+
+  .autocomplete-item {
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .autocomplete-item:hover { background: #F5FFFE; color: #1DADA0; }
+
+  .quick-adds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding-top: 4px;
+  }
+
+  /* ======= OPTION C ======= */
+  .chip-flow-container {
+    position: relative;
+    min-height: 88px;
+    overflow: hidden;
+  }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .chip-flow-label {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 8px;
+  }
+
+  .skip-link {
+    font-size: 11px;
+    color: #AAA;
+    cursor: pointer;
+    text-align: right;
+    margin-top: 6px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .skip-link:hover { color: #1DADA0; }
+
+  /* ======= OPTION D ======= */
+  .tabs-row {
+    display: flex;
+    gap: 0;
+    border-bottom: 1.5px solid #EBEBEB;
+  }
+
+  .tab-btn {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 10px 7px;
+    border: none;
+    background: transparent;
+    color: #AAA;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1.5px;
+    transition: color 0.15s, border-color 0.15s;
+    letter-spacing: 0.2px;
+  }
+  .tab-btn.active {
+    color: #1DADA0;
+    border-bottom-color: #1DADA0;
+    font-weight: 600;
+  }
+  .tab-btn:hover:not(.active) { color: #555; }
+
+  .tab-panel {
+    display: none;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding-top: 10px;
+  }
+  .tab-panel.active { display: flex; }
+
+  /* ======= OPTION E ======= */
+  .sentence-builder {
+    font-size: 14px;
+    color: #333;
+    line-height: 2;
+    word-spacing: 2px;
+  }
+
+  .slot {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+  }
+
+  .slot-trigger {
+    display: inline-flex;
+    align-items: center;
+    border-bottom: 2px dashed #C0C0C0;
+    color: #BBB;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0 4px 1px;
+    transition: all 0.15s;
+    font-style: italic;
+    user-select: none;
+  }
+  .slot-trigger:hover {
+    border-bottom-color: #1DADA0;
+    color: #1DADA0;
+  }
+
+  .slot-trigger.filled {
+    border-bottom: 2px solid #1DADA0;
+    color: #1DADA0;
+    font-style: normal;
+    font-weight: 500;
+    background: rgba(29,173,160,0.08);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+
+  .slot-picker {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #fff;
+    border: 1.5px solid #E8E8E8;
+    border-radius: 10px;
+    padding: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    z-index: 100;
+    width: 200px;
+    display: none;
+  }
+  .slot-picker.open { display: block; }
+
+  .slot-picker-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: #333;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.1s;
+  }
+  .slot-picker-item:hover { background: #F0FFFE; color: #1DADA0; }
+  .slot-picker-item.custom {
+    color: #AAA;
+    border-top: 1px solid #F0F0F0;
+    margin-top: 4px;
+    padding-top: 8px;
+  }
+
+  .slot-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #CCC;
+    cursor: pointer;
+    padding: 2px 6px;
+    border: 1.5px dashed #DDD;
+    border-radius: 20px;
+    margin-left: 4px;
+    transition: all 0.15s;
+  }
+  .slot-add:hover {
+    color: #1DADA0;
+    border-color: #1DADA0;
+  }
+
+  /* animations */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes chipPop {
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .anim-in {
+    animation: fadeSlideIn 0.2s ease forwards;
+  }
+
+  .chip-anim {
+    animation: chipPop 0.18s ease forwards;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">Describe your ideal ride — Input Exploration</div>
+<div class="page-subtitle">5 UI patterns for the attribute picker in car search sidebar</div>
+
+<div class="options-grid">
+
+  <!-- ============ OPTION A ============ -->
+  <div class="option-wrapper">
+    <div>
+      <div class="option-label">Option A</div>
+      <div class="option-name">Suggestion Rail (horizontal scroll)</div>
+    </div>
+    <div class="sidebar-card" id="optA">
+      <div class="section-label">Describe your ideal ride</div>
+      <div class="prompt-preview" id="optA-preview">
+        <span class="prompt-star">✦</span>I'm looking for a reliable car.
+      </div>
+      <div class="divider"></div>
+
+      <!-- Selected row -->
+      <div class="selected-row" id="optA-selected"></div>
+
+      <!-- Suggestion rail -->
+      <div class="suggestion-rail-wrapper">
+        <div class="suggestion-rail" id="optA-rail"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ OPTION B ============ -->
+  <div class="option-wrapper">
+    <div>
+      <div class="option-label">Option B</div>
+      <div class="option-name">Inline Tag Input (email-style)</div>
+    </div>
+    <div class="sidebar-card" id="optB">
+      <div class="section-label">Describe your ideal ride</div>
+      <div class="prompt-preview" id="optB-preview">
+        <span class="prompt-star">✦</span>I'm looking for a reliable car.
+      </div>
+      <div class="divider"></div>
+
+      <div class="tag-input-wrapper" id="optB-input-wrapper">
+        <!-- tags injected here -->
+        <input class="tag-input-field" id="optB-input" placeholder="Type an attribute..." autocomplete="off">
+      </div>
+
+      <div class="autocomplete-dropdown" id="optB-dropdown"></div>
+
+      <div id="optB-quick-section">
+        <div style="font-size:11px;color:#AAA;margin-bottom:5px;">Quick adds</div>
+        <div class="quick-adds" id="optB-quick"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ OPTION C ============ -->
+  <div class="option-wrapper">
+    <div>
+      <div class="option-label">Option C</div>
+      <div class="option-name">Context-aware Progressive Chips</div>
+    </div>
+    <div class="sidebar-card" id="optC">
+      <div class="section-label">Describe your ideal ride</div>
+      <div class="prompt-preview" id="optC-preview">
+        <span class="prompt-star">✦</span>I'm looking for a reliable car.
+      </div>
+      <div class="divider"></div>
+
+      <!-- Selected badges -->
+      <div class="selected-row" id="optC-selected"></div>
+
+      <div class="chip-flow-label">What matters most to you?</div>
+      <div class="chip-flow-container">
+        <div class="chip-row" id="optC-chips"></div>
+      </div>
+      <div class="skip-link" id="optC-skip">Skip / Add custom</div>
+    </div>
+  </div>
+
+  <!-- ============ OPTION D ============ -->
+  <div class="option-wrapper">
+    <div>
+      <div class="option-label">Option D</div>
+      <div class="option-name">Grouped Quick-picks with Tabs</div>
+    </div>
+    <div class="sidebar-card" id="optD">
+      <div class="section-label">Describe your ideal ride</div>
+      <div class="prompt-preview" id="optD-preview">
+        <span class="prompt-star">✦</span>I'm looking for a reliable car.
+      </div>
+      <div class="divider"></div>
+
+      <!-- Selected summary -->
+      <div class="selected-row" id="optD-selected"></div>
+
+      <div class="tabs-row" id="optD-tabs">
+        <button class="tab-btn active" data-tab="lifestyle">Lifestyle</button>
+        <button class="tab-btn" data-tab="condition">Condition</button>
+        <button class="tab-btn" data-tab="budget">Budget</button>
+      </div>
+
+      <div class="tab-panel active" id="optD-tab-lifestyle"></div>
+      <div class="tab-panel" id="optD-tab-condition"></div>
+      <div class="tab-panel" id="optD-tab-budget"></div>
+    </div>
+  </div>
+
+  <!-- ============ OPTION E ============ -->
+  <div class="option-wrapper">
+    <div>
+      <div class="option-label">Option E</div>
+      <div class="option-name">Smart Sentence Tokens</div>
+    </div>
+    <div class="sidebar-card" id="optE">
+      <div class="section-label">Describe your ideal ride</div>
+      <div class="prompt-preview" id="optE-preview">
+        <span class="prompt-star">✦</span>I'm looking for a reliable car.
+      </div>
+      <div class="divider"></div>
+
+      <div class="sentence-builder" id="optE-sentence"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ==========================================
+// SHARED HELPERS
+// ==========================================
+function tealTerm(text) {
+  return `<span class="teal-term">${text}</span>`;
+}
+
+function makeChip(label, selected, onRemove, onClick) {
+  const el = document.createElement('span');
+  el.className = `chip ${selected ? 'chip-selected' : 'chip-unselected'} chip-anim`;
+  if (selected) {
+    el.innerHTML = `${label} <span class="chip-remove">×</span>`;
+    el.querySelector('.chip-remove').addEventListener('click', e => { e.stopPropagation(); onRemove && onRemove(); });
+  } else {
+    el.textContent = label;
+    el.addEventListener('click', onClick);
+  }
+  return el;
+}
+
+function makeAddChip(label, onClick) {
+  const el = document.createElement('span');
+  el.className = 'chip chip-add chip-anim';
+  el.textContent = label || '+ Add';
+  el.addEventListener('click', onClick);
+  return el;
+}
+
+// ==========================================
+// OPTION A — Suggestion Rail
+// ==========================================
+(function() {
+  const selectedRow = document.getElementById('optA-selected');
+  const rail = document.getElementById('optA-rail');
+  const preview = document.getElementById('optA-preview');
+
+  const pools = [
+    ["Family-friendly", "Almost like new", "High performance", "Fuel efficient", "Low mileage"],
+    ["5+ seaters", "Sunroof", "Leather seats", "Android Auto", "Rear camera"],
+    ["Below $30K", "5yr+ COE", "< $4K/mo depr.", "Single owner"]
+  ];
+
+  let selected = [];
+  let round = 0;
+  let addInputVisible = false;
+
+  function updatePreview() {
+    if (selected.length === 0) {
+      preview.innerHTML = '<span class="prompt-star">✦</span>I\'m looking for a reliable car.';
+    } else {
+      const terms = selected.map(s => tealTerm(s)).join(', ');
+      preview.innerHTML = `<span class="prompt-star">✦</span>I'm looking for a ${terms} car.`;
+    }
+  }
+
+  function renderSelected() {
+    selectedRow.innerHTML = '';
+    selected.forEach((s, i) => {
+      const chip = makeChip(s, true, () => {
+        selected.splice(i, 1);
+        renderSelected();
+        updatePreview();
+      });
+      selectedRow.appendChild(chip);
+    });
+  }
+
+  function renderRail() {
+    rail.innerHTML = '';
+    const pool = pools[round % pools.length];
+    const available = pool.filter(p => !selected.includes(p));
+    available.forEach(label => {
+      const chip = makeChip(label, false, null, () => {
+        selected.push(label);
+        round = Math.min(round + 1, pools.length - 1);
+        renderSelected();
+        renderRail();
+        updatePreview();
+      });
+      rail.appendChild(chip);
+    });
+
+    // Add anything chip
+    if (!addInputVisible) {
+      const addChip = makeAddChip('Add anything +', () => {
+        addInputVisible = true;
+        // replace Add chip with an inline input
+        rail.removeChild(addChip);
+        const inp = document.createElement('input');
+        inp.style.cssText = 'border:1.5px solid #1DADA0;border-radius:20px;padding:3px 10px;font-size:12px;font-family:Inter,sans-serif;outline:none;width:110px;color:#333;';
+        inp.placeholder = 'Type & enter…';
+        rail.appendChild(inp);
+        inp.focus();
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter' && inp.value.trim()) {
+            selected.push(inp.value.trim());
+            addInputVisible = false;
+            renderSelected();
+            renderRail();
+            updatePreview();
+          }
+          if (e.key === 'Escape') {
+            addInputVisible = false;
+            renderRail();
+          }
+        });
+      });
+      rail.appendChild(addChip);
+    }
+  }
+
+  renderSelected();
+  renderRail();
+  updatePreview();
+})();
+
+
+// ==========================================
+// OPTION B — Inline Tag Input
+// ==========================================
+(function() {
+  const wrapper = document.getElementById('optB-input-wrapper');
+  const input = document.getElementById('optB-input');
+  const dropdown = document.getElementById('optB-dropdown');
+  const quickContainer = document.getElementById('optB-quick');
+  const quickSection = document.getElementById('optB-quick-section');
+  const preview = document.getElementById('optB-preview');
+
+  const allSuggestions = [
+    "Family-friendly", "Almost like new", "High performance", "Fuel efficient", "Low mileage",
+    "5+ seaters", "Sunroof", "Leather seats", "Android Auto", "Rear camera",
+    "Below $30K", "5yr+ COE", "< $4K/mo depr.", "Single owner"
+  ];
+
+  const quickAdds = ["Family-friendly", "Almost like new", "Fuel efficient", "Low mileage"];
+
+  let tags = [];
+
+  function updatePreview() {
+    if (tags.length === 0) {
+      preview.innerHTML = '<span class="prompt-star">✦</span>I\'m looking for a reliable car.';
+    } else {
+      const terms = tags.map(t => tealTerm(t)).join(', ');
+      preview.innerHTML = `<span class="prompt-star">✦</span>I'm looking for a ${terms} car.`;
+    }
+  }
+
+  function renderTags() {
+    // Remove old tags
+    wrapper.querySelectorAll('.chip-selected').forEach(el => el.remove());
+    tags.forEach((tag, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip chip-selected chip-anim';
+      chip.innerHTML = `${tag} <span class="chip-remove">×</span>`;
+      chip.querySelector('.chip-remove').addEventListener('click', () => {
+        tags.splice(i, 1);
+        renderTags();
+        renderQuickAdds();
+        updatePreview();
+      });
+      wrapper.insertBefore(chip, input);
+    });
+  }
+
+  function addTag(value) {
+    const v = value.trim();
+    if (v && !tags.includes(v)) {
+      tags.push(v);
+      renderTags();
+      renderQuickAdds();
+      updatePreview();
+    }
+    input.value = '';
+    dropdown.classList.remove('visible');
+    dropdown.innerHTML = '';
+  }
+
+  function renderDropdown(query) {
+    const matches = allSuggestions.filter(s =>
+      s.toLowerCase().includes(query.toLowerCase()) && !tags.includes(s)
+    );
+    if (matches.length === 0 || query === '') {
+      dropdown.classList.remove('visible');
+      return;
+    }
+    dropdown.innerHTML = '';
+    matches.slice(0, 5).forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'autocomplete-item';
+      item.textContent = m;
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        addTag(m);
+      });
+      dropdown.appendChild(item);
+    });
+    dropdown.classList.add('visible');
+  }
+
+  function renderQuickAdds() {
+    quickContainer.innerHTML = '';
+    quickAdds.filter(q => !tags.includes(q)).slice(0, 4).forEach(q => {
+      const chip = makeChip(q, false, null, () => addTag(q));
+      quickContainer.appendChild(chip);
+    });
+    const addChip = makeAddChip('+ Custom', () => {
+      input.focus();
+    });
+    quickContainer.appendChild(addChip);
+  }
+
+  input.addEventListener('input', () => renderDropdown(input.value));
+  input.addEventListener('focus', () => {
+    wrapper.classList.add('focused');
+    quickSection.style.display = '';
+    if (input.value === '') dropdown.classList.remove('visible');
+  });
+  input.addEventListener('blur', () => {
+    wrapper.classList.remove('focused');
+    setTimeout(() => dropdown.classList.remove('visible'), 120);
+  });
+  input.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ',') && input.value.trim()) {
+      e.preventDefault();
+      addTag(input.value.replace(',', ''));
+    }
+    if (e.key === 'Backspace' && input.value === '' && tags.length > 0) {
+      tags.pop();
+      renderTags();
+      renderQuickAdds();
+      updatePreview();
+    }
+  });
+  wrapper.addEventListener('click', () => input.focus());
+
+  renderTags();
+  renderQuickAdds();
+  updatePreview();
+})();
+
+
+// ==========================================
+// OPTION C — Progressive Chips
+// ==========================================
+(function() {
+  const chipsContainer = document.getElementById('optC-chips');
+  const selectedRow = document.getElementById('optC-selected');
+  const preview = document.getElementById('optC-preview');
+  const skipLink = document.getElementById('optC-skip');
+
+  const flows = {
+    default: ["Family-friendly", "Performance", "Fuel efficient", "Budget-conscious"],
+    "Family-friendly": ["5+ seaters", "Large boot", "Child-safe features", "Spacious"],
+    "Performance": ["Turbocharged", "Sport mode", "0–100 under 8s", "AWD"],
+    "Fuel efficient": ["Hybrid/EV", "< 8L/100km", "Eco mode", "Small engine"],
+    "Budget-conscious": ["Below $30K", "Low depreciation", "5yr+ COE", "High resale"],
+  };
+
+  let selected = [];
+  let lastSelected = null;
+
+  function updatePreview() {
+    if (selected.length === 0) {
+      preview.innerHTML = '<span class="prompt-star">✦</span>I\'m looking for a reliable car.';
+    } else {
+      const terms = selected.map(s => tealTerm(s)).join(', ');
+      preview.innerHTML = `<span class="prompt-star">✦</span>I'm looking for a ${terms} car.`;
+    }
+  }
+
+  function renderSelected() {
+    selectedRow.innerHTML = '';
+    selected.forEach((s, i) => {
+      const chip = makeChip(s, true, () => {
+        selected.splice(i, 1);
+        lastSelected = null;
+        renderSelected();
+        renderChips('default');
+        updatePreview();
+      });
+      selectedRow.appendChild(chip);
+    });
+  }
+
+  function renderChips(flowKey) {
+    const pool = flows[flowKey] || flows['default'];
+    const available = pool.filter(p => !selected.includes(p));
+
+    // animate out old
+    Array.from(chipsContainer.children).forEach(c => {
+      c.style.transition = 'opacity 0.15s, transform 0.15s';
+      c.style.opacity = '0';
+      c.style.transform = 'scale(0.9)';
+    });
+
+    setTimeout(() => {
+      chipsContainer.innerHTML = '';
+      available.slice(0, 4).forEach((label, idx) => {
+        const chip = makeChip(label, false, null, () => {
+          selected.push(label);
+          lastSelected = label;
+          renderSelected();
+          updatePreview();
+          // get next flow
+          const nextFlow = flows[label] ? label : (flows[lastSelected] ? lastSelected : 'default');
+          renderChips(nextFlow);
+        });
+        chip.style.opacity = '0';
+        chip.style.transform = 'translateY(8px)';
+        chipsContainer.appendChild(chip);
+        requestAnimationFrame(() => {
+          chip.style.transition = `opacity 0.18s ${idx * 0.04}s, transform 0.18s ${idx * 0.04}s`;
+          chip.style.opacity = '1';
+          chip.style.transform = 'translateY(0)';
+        });
+      });
+
+      // Skip/custom chip
+      const addChip = makeAddChip('+ Custom', () => {
+        const val = prompt('Add custom attribute:');
+        if (val && val.trim()) {
+          selected.push(val.trim());
+          renderSelected();
+          updatePreview();
+          renderChips(lastSelected || 'default');
+        }
+      });
+      chipsContainer.appendChild(addChip);
+    }, 150);
+  }
+
+  skipLink.addEventListener('click', () => {
+    renderChips('default');
+  });
+
+  renderChips('default');
+  updatePreview();
+})();
+
+
+// ==========================================
+// OPTION D — Tabbed Quick-picks
+// ==========================================
+(function() {
+  const tabData = {
+    lifestyle: ["Family-friendly", "Performance", "Off-road", "Luxury feel", "Daily commuter", "Weekend drive"],
+    condition: ["Almost like new", "< 30,000 km", "Single owner", "Full service record", "< 3 years old"],
+    budget: ["Below $30K", "< $4K/mo depr.", "5yr+ COE", "Low road tax", "High resale value"]
+  };
+
+  const preview = document.getElementById('optD-preview');
+  const selectedRow = document.getElementById('optD-selected');
+  const tabs = document.querySelectorAll('#optD-tabs .tab-btn');
+  let selected = [];
+
+  function updatePreview() {
+    if (selected.length === 0) {
+      preview.innerHTML = '<span class="prompt-star">✦</span>I\'m looking for a reliable car.';
+    } else {
+      const terms = selected.map(s => tealTerm(s)).join(', ');
+      preview.innerHTML = `<span class="prompt-star">✦</span>I'm looking for a ${terms} car.`;
+    }
+  }
+
+  function renderSelectedRow() {
+    selectedRow.innerHTML = '';
+    selected.forEach((s, i) => {
+      const chip = makeChip(s, true, () => {
+        selected.splice(i, 1);
+        renderSelectedRow();
+        renderAllPanels();
+        updatePreview();
+      });
+      selectedRow.appendChild(chip);
+    });
+  }
+
+  function renderPanel(tabName) {
+    const panel = document.getElementById(`optD-tab-${tabName}`);
+    panel.innerHTML = '';
+    tabData[tabName].forEach(label => {
+      const isSel = selected.includes(label);
+      const chip = makeChip(label, isSel,
+        isSel ? () => {
+          selected = selected.filter(s => s !== label);
+          renderSelectedRow();
+          renderPanel(tabName);
+          updatePreview();
+        } : null,
+        !isSel ? () => {
+          selected.push(label);
+          renderSelectedRow();
+          renderPanel(tabName);
+          updatePreview();
+        } : null
+      );
+      panel.appendChild(chip);
+    });
+
+    const addChip = makeAddChip('+ Add', () => {
+      const val = prompt('Add custom attribute:');
+      if (val && val.trim()) {
+        if (!tabData[tabName].includes(val.trim())) tabData[tabName].push(val.trim());
+        selected.push(val.trim());
+        renderSelectedRow();
+        renderPanel(tabName);
+        updatePreview();
+      }
+    });
+    panel.appendChild(addChip);
+  }
+
+  function renderAllPanels() {
+    Object.keys(tabData).forEach(t => renderPanel(t));
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      const panel = document.getElementById(`optD-tab-${tab.dataset.tab}`);
+      if (panel) {
+        panel.classList.add('active');
+        panel.style.animation = 'fadeSlideIn 0.18s ease';
+      }
+    });
+  });
+
+  renderAllPanels();
+  updatePreview();
+})();
+
+
+// ==========================================
+// OPTION E — Smart Sentence Tokens
+// ==========================================
+(function() {
+  const sentence = document.getElementById('optE-sentence');
+  const preview = document.getElementById('optE-preview');
+
+  const slotSuggestions = [
+    ["family-friendly", "sporty", "luxurious", "practical", "fuel-efficient"],
+    ["almost like new", "well-maintained", "high performance", "low mileage", "single-owner"],
+    ["below $30K", "5yr+ COE", "< $4K/mo depreciation", "easy to park"]
+  ];
+
+  let slotValues = [null, null, null];
+  let activeSlot = null;
+  let extraSlots = []; // values beyond the base 3
+
+  function updatePreview() {
+    const all = [...slotValues.filter(Boolean), ...extraSlots];
+    if (all.length === 0) {
+      preview.innerHTML = '<span class="prompt-star">✦</span>I\'m looking for a reliable car.';
+    } else {
+      const terms = all.map(s => tealTerm(s)).join(', ');
+      preview.innerHTML = `<span class="prompt-star">✦</span>I'm looking for a ${terms} car.`;
+    }
+  }
+
+  function closeAllPickers() {
+    document.querySelectorAll('.slot-picker.open').forEach(p => p.classList.remove('open'));
+    activeSlot = null;
+  }
+
+  function makeSlotEl(index) {
+    const slot = document.createElement('span');
+    slot.className = 'slot';
+
+    const trigger = document.createElement('span');
+    trigger.className = 'slot-trigger';
+    const placeholders = ['_______', '_______', '_______'];
+    trigger.textContent = slotValues[index] || placeholders[index] || '_______';
+    if (slotValues[index]) trigger.classList.add('filled');
+
+    const picker = document.createElement('div');
+    picker.className = 'slot-picker';
+
+    function buildPicker() {
+      picker.innerHTML = '';
+      const pool = slotSuggestions[index] || slotSuggestions[2];
+      pool.forEach(opt => {
+        const item = document.createElement('div');
+        item.className = 'slot-picker-item';
+        item.textContent = opt;
+        item.addEventListener('mousedown', e => {
+          e.preventDefault();
+          slotValues[index] = opt;
+          trigger.textContent = opt;
+          trigger.classList.add('filled');
+          picker.classList.remove('open');
+          activeSlot = null;
+          renderSentence();
+          updatePreview();
+        });
+        picker.appendChild(item);
+      });
+
+      // custom option
+      const custom = document.createElement('div');
+      custom.className = 'slot-picker-item custom';
+      custom.textContent = '✏ Type custom…';
+      custom.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const val = prompt('Enter custom attribute:');
+        if (val && val.trim()) {
+          slotValues[index] = val.trim();
+          trigger.textContent = val.trim();
+          trigger.classList.add('filled');
+          picker.classList.remove('open');
+          activeSlot = null;
+          renderSentence();
+          updatePreview();
+        }
+      });
+      picker.appendChild(custom);
+
+      // clear if already filled
+      if (slotValues[index]) {
+        const clear = document.createElement('div');
+        clear.className = 'slot-picker-item custom';
+        clear.textContent = '✕ Clear';
+        clear.addEventListener('mousedown', e => {
+          e.preventDefault();
+          slotValues[index] = null;
+          trigger.textContent = placeholders[index] || '_______';
+          trigger.classList.remove('filled');
+          picker.classList.remove('open');
+          activeSlot = null;
+          renderSentence();
+          updatePreview();
+        });
+        picker.appendChild(clear);
+      }
+    }
+
+    trigger.addEventListener('click', e => {
+      e.stopPropagation();
+      if (activeSlot === index) {
+        picker.classList.remove('open');
+        activeSlot = null;
+      } else {
+        closeAllPickers();
+        buildPicker();
+        picker.classList.add('open');
+        activeSlot = index;
+      }
+    });
+
+    slot.appendChild(trigger);
+    slot.appendChild(picker);
+    return slot;
+  }
+
+  function renderSentence() {
+    sentence.innerHTML = '';
+
+    const prefix = document.createTextNode('My ideal ride is ');
+    sentence.appendChild(prefix);
+
+    sentence.appendChild(makeSlotEl(0));
+
+    const comma1 = document.createTextNode(', ');
+    sentence.appendChild(comma1);
+
+    sentence.appendChild(makeSlotEl(1));
+
+    const andText = document.createTextNode(', and ');
+    sentence.appendChild(andText);
+
+    sentence.appendChild(makeSlotEl(2));
+
+    // Show extra slots
+    extraSlots.forEach((val, i) => {
+      const comma = document.createTextNode(', ');
+      sentence.appendChild(comma);
+
+      const slot = document.createElement('span');
+      slot.className = 'slot';
+      const trigger = document.createElement('span');
+      trigger.className = 'slot-trigger filled';
+      trigger.textContent = val;
+      trigger.addEventListener('click', e => {
+        e.stopPropagation();
+        extraSlots.splice(i, 1);
+        renderSentence();
+        updatePreview();
+      });
+      slot.appendChild(trigger);
+      sentence.appendChild(slot);
+    });
+
+    // "+" add more button — only show if at least slot 1 is filled
+    if (slotValues.filter(Boolean).length >= 1) {
+      const gap = document.createTextNode(' ');
+      sentence.appendChild(gap);
+      const addBtn = document.createElement('span');
+      addBtn.className = 'slot-add';
+      addBtn.innerHTML = '+ more';
+
+      const addPicker = document.createElement('div');
+      addPicker.className = 'slot-picker';
+      addPicker.style.top = '28px';
+
+      addBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if (addPicker.classList.contains('open')) {
+          addPicker.classList.remove('open');
+          return;
+        }
+        closeAllPickers();
+        addPicker.innerHTML = '';
+        const pool = slotSuggestions[2];
+        pool.forEach(opt => {
+          const item = document.createElement('div');
+          item.className = 'slot-picker-item';
+          item.textContent = opt;
+          item.addEventListener('mousedown', ev => {
+            ev.preventDefault();
+            if (!extraSlots.includes(opt) && !slotValues.includes(opt)) {
+              extraSlots.push(opt);
+              renderSentence();
+              updatePreview();
+            }
+            addPicker.classList.remove('open');
+          });
+          addPicker.appendChild(item);
+        });
+        const custom = document.createElement('div');
+        custom.className = 'slot-picker-item custom';
+        custom.textContent = '✏ Type custom…';
+        custom.addEventListener('mousedown', ev => {
+          ev.preventDefault();
+          const val = prompt('Enter attribute:');
+          if (val && val.trim()) {
+            extraSlots.push(val.trim());
+            renderSentence();
+            updatePreview();
+          }
+          addPicker.classList.remove('open');
+        });
+        addPicker.appendChild(custom);
+        addPicker.classList.add('open');
+      });
+
+      const slotWrapper = document.createElement('span');
+      slotWrapper.className = 'slot';
+      slotWrapper.style.position = 'relative';
+      slotWrapper.appendChild(addBtn);
+      slotWrapper.appendChild(addPicker);
+      sentence.appendChild(slotWrapper);
+    }
+
+    const period = document.createTextNode('.');
+    sentence.appendChild(period);
+  }
+
+  document.addEventListener('click', () => {
+    closeAllPickers();
+  });
+
+  renderSentence();
+  updatePreview();
+})();
+</script>
+</body>
+</html>
