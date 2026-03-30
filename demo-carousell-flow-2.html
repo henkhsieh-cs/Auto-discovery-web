@@ -1144,9 +1144,12 @@ const fs4 = document.getElementById('fs4');
 const fs5 = document.getElementById('fs5');
 
 // Regular SERP
+const sidePanel    = document.getElementById('sidePanel');
+const panelToggle  = document.getElementById('panelToggle');
 const rSearchInput = document.getElementById('rSearchInput');
 const rSearchWrap  = document.getElementById('rSearchWrap');
 const rClearBtn    = document.getElementById('rClearBtn');
+const rCount       = document.getElementById('rCount');
 const dropdown     = document.getElementById('dropdown');
 const ddAiBtn      = document.getElementById('ddAiBtn');
 
@@ -1492,7 +1495,8 @@ function handleRegularSearch() {
     // Enter / Search always updates results in-place on Regular SERP.
     // AI SERP is only reached by clicking a suggestion in the dropdown.
     const count = Math.floor(Math.random() * 900 + 100);
-    document.getElementById('rCount').innerHTML = count + ' search results for <em id="rCountTerm">\'' + q + '\'</em> in Singapore';
+    const qEsc = q.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    rCount.innerHTML = count + ' search results for <em id="rCountTerm">\'' + qEsc + '\'</em> in Singapore';
     urlText.textContent = 'carousell.sg/cars/used-cars?q=' + q.toLowerCase().replace(/\s+/g, '+');
     hideRSkel();
   }, 600);
@@ -1910,9 +1914,7 @@ rSearchWrap.classList.toggle('has-text', !!rSearchInput.value.trim());
 loadPromptToSidebar('asian-suv');
 
 // Panel toggle
-document.getElementById('panelToggle').addEventListener('click', () => {
-  document.getElementById('sidePanel').classList.toggle('collapsed');
-});
+panelToggle.addEventListener('click', () => sidePanel.classList.toggle('collapsed'));
 </script>
 </body>
 </html>
