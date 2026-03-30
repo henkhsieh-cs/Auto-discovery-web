@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Describe your ideal ride — Input Exploration Pt. 2 (Non-chip variants)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0F0F0F;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 48px 32px 80px;
+    color: #fff;
+  }
+
+  .page-title {
+    font-size: 21px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+    letter-spacing: -0.3px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 48px;
+  }
+
+  .options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    align-items: flex-start;
+    max-width: 360px;
+  }
+
+  .option-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .option-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #444;
+  }
+
+  .option-name {
+    font-size: 13px;
+    color: #777;
+    margin-top: 1px;
+    font-weight: 400;
+  }
+
+  /* SIDEBAR CARD */
+  .sidebar-card {
+    width: 300px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+  }
+
+  /* PROMPT PREVIEW */
+  .prompt-preview {
+    background: #F3FFFE;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #555;
+    line-height: 1.5;
+    min-height: 38px;
+    border: 1px solid #D6F5F3;
+  }
+
+  .prompt-star {
+    color: #1DADA0;
+    margin-right: 4px;
+    font-size: 11px;
+  }
+
+  .prompt-highlight {
+    color: #1DADA0;
+    font-weight: 600;
+    background: rgba(29,173,160,0.10);
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+
+  .prompt-placeholder {
+    color: #BBB;
+    font-style: italic;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .reset-link {
+    font-size: 11px;
+    color: #CCC;
+    text-decoration: none;
+    cursor: pointer;
+    align-self: flex-end;
+    margin-top: 2px;
+    transition: color 0.15s;
+  }
+  .reset-link:hover { color: #1DADA0; }
+
+  /* ===================== OPTION F — Free Text ===================== */
+  .freetext-area {
+    width: 100%;
+    min-height: 72px;
+    border-radius: 10px;
+    border: 1.5px solid #E5E5E5;
+    padding: 10px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: #222;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    background: #FAFAFA;
+    line-height: 1.5;
+  }
+  .freetext-area:focus {
+    border-color: #1DADA0;
+    background: #fff;
+  }
+  .freetext-area::placeholder { color: #BBB; }
+
+  .understood-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    min-height: 22px;
+  }
+
+  .understood-label {
+    font-size: 11px;
+    color: #AAA;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .understood-tag {
+    font-size: 11px;
+    color: #1DADA0;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  .freetext-hint {
+    font-size: 11px;
+    color: #CCC;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  /* ===================== OPTION G — Sliders ===================== */
+  .slider-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 4px;
+  }
+
+  .slider-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .slider-dim-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #444;
+    letter-spacing: 0.3px;
+  }
+
+  .slider-val-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: #1DADA0;
+    background: rgba(29,173,160,0.10);
+    border-radius: 4px;
+    padding: 1px 6px;
+    min-width: 24px;
+    text-align: center;
+  }
+
+  .slider-poles {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #BBB;
+    margin-top: 1px;
+    margin-bottom: 2px;
+  }
+
+  /* Custom range input */
+  input[type="range"].teal-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right, #1DADA0 0%, #1DADA0 50%, #E5E5E5 50%, #E5E5E5 100%);
+    outline: none;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  input[type="range"].teal-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #1DADA0;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(29,173,160,0.4);
+    transition: transform 0.15s;
+  }
+  input[type="range"].teal-slider::-webkit-slider-thumb:active {
+    transform: scale(1.2);
+  }
+  input[type="range"].teal-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #1DADA0;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 1px 4px rgba(29,173,160,0.4);
+  }
+
+  /* ===================== OPTION H — Q&A Flow ===================== */
+  .qa-progress {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    padding: 2px 0;
+  }
+
+  .qa-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #E5E5E5;
+    transition: background 0.25s;
+  }
+
+  .qa-dot.active {
+    background: #1DADA0;
+  }
+
+  .qa-dot.done {
+    background: rgba(29,173,160,0.4);
+  }
+
+  .qa-viewport {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+  }
+
+  .qa-track {
+    display: flex;
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    width: 400%;
+  }
+
+  .qa-step {
+    width: 25%;
+    flex-shrink: 0;
+    padding: 0 2px;
+  }
+
+  .qa-question {
+    font-size: 13px;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+
+  .qa-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    border: 1.5px solid #EBEBEB;
+    margin-bottom: 7px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #FAFAFA;
+  }
+
+  .qa-option:hover {
+    border-color: #1DADA0;
+    background: #F3FFFE;
+  }
+
+  .qa-option.selected {
+    border-color: #1DADA0;
+    background: #F0FFFE;
+  }
+
+  .qa-radio {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #DDD;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s;
+  }
+
+  .qa-option.selected .qa-radio {
+    border-color: #1DADA0;
+    background: #1DADA0;
+  }
+
+  .qa-option.selected .qa-radio::after {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #fff;
+  }
+
+  .qa-option-text {
+    font-size: 12.5px;
+    color: #333;
+    font-weight: 500;
+  }
+
+  .qa-summary {
+    background: #F3FFFE;
+    border-radius: 10px;
+    padding: 12px;
+    border: 1px solid #D6F5F3;
+  }
+
+  .qa-summary-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1DADA0;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 6px;
+  }
+
+  .qa-summary-text {
+    font-size: 12px;
+    color: #444;
+    line-height: 1.5;
+  }
+
+  .qa-refine {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #1DADA0;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .qa-refine:hover { text-decoration: underline; }
+
+  /* ===================== OPTION I — Mood Board ===================== */
+  .mood-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .mood-tile {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    background: #F5F5F5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    position: relative;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    user-select: none;
+  }
+
+  .mood-tile:hover {
+    border-color: rgba(29,173,160,0.4);
+    background: #F0F0F0;
+  }
+
+  .mood-tile.selected {
+    border-color: #1DADA0;
+    background: #F3FFFE;
+    box-shadow: 0 0 0 3px rgba(29,173,160,0.15);
+  }
+
+  .mood-emoji {
+    font-size: 26px;
+    line-height: 1;
+  }
+
+  .mood-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #555;
+    text-align: center;
+    line-height: 1.2;
+    padding: 0 2px;
+  }
+
+  .mood-tile.selected .mood-label {
+    color: #1DADA0;
+  }
+
+  .mood-check {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #1DADA0;
+    color: #fff;
+    font-size: 9px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+
+  .mood-tile.selected .mood-check {
+    display: flex;
+  }
+
+  .mood-extra-input {
+    width: 100%;
+    border-radius: 9px;
+    border: 1.5px solid #E5E5E5;
+    padding: 8px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    color: #222;
+    outline: none;
+    background: #FAFAFA;
+    transition: border-color 0.2s;
+  }
+  .mood-extra-input:focus {
+    border-color: #1DADA0;
+    background: #fff;
+  }
+  .mood-extra-input::placeholder { color: #CCC; }
+
+  /* ===================== OPTION J — Drag to Prioritise ===================== */
+  .dnd-dropzones {
+    display: flex;
+    gap: 8px;
+  }
+
+  .dnd-zone {
+    flex: 1;
+    min-height: 80px;
+    border-radius: 10px;
+    border: 2px dashed #E0E0E0;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .dnd-zone.must {
+    border-color: #1DADA0;
+    background: #F5FFFE;
+  }
+
+  .dnd-zone.nice {
+    border-color: #DDDDDD;
+    background: #FAFAFA;
+  }
+
+  .dnd-zone.dragover {
+    background: rgba(29,173,160,0.08);
+    border-color: #1DADA0;
+    border-style: solid;
+  }
+
+  .dnd-zone-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 2px;
+  }
+
+  .dnd-zone.must .dnd-zone-label { color: #1DADA0; }
+  .dnd-zone.nice .dnd-zone-label { color: #AAA; }
+
+  .dnd-zone-empty {
+    font-size: 10px;
+    color: #CCCCCC;
+    text-align: center;
+    padding: 8px 0;
+    font-style: italic;
+  }
+
+  .dnd-available-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #AAA;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 2px;
+  }
+
+  .dnd-pool {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .dnd-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: #F5F5F5;
+    border: 1.5px solid #EBEBEB;
+    cursor: grab;
+    font-size: 12px;
+    font-weight: 500;
+    color: #333;
+    user-select: none;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.15s, border-color 0.15s;
+    position: relative;
+  }
+
+  .dnd-card:hover {
+    border-color: #C8C8C8;
+    background: #EEEEE;
+  }
+
+  .dnd-card.dragging {
+    opacity: 0.5;
+    transform: scale(0.97);
+  }
+
+  .dnd-card.in-must {
+    background: rgba(29,173,160,0.10);
+    border-color: #1DADA0;
+    color: #0D7A71;
+  }
+
+  .dnd-card.in-nice {
+    background: #F0F0F0;
+    border-color: #CCCCCC;
+    color: #666;
+  }
+
+  .dnd-card-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .dnd-card-label {
+    flex: 1;
+    font-size: 12px;
+  }
+
+  .dnd-card-state {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #CCC;
+    white-space: nowrap;
+  }
+
+  .dnd-card.in-must .dnd-card-state { color: #1DADA0; }
+  .dnd-card.in-nice .dnd-card-state { color: #AAA; }
+
+  .dnd-hint {
+    font-size: 10.5px;
+    color: #BBBBBB;
+    text-align: center;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div style="max-width:360px; margin:0 auto;">
+  <div class="page-title">Describe your ideal ride</div>
+  <div class="page-subtitle">Input Exploration Pt. 2 — Non-chip variants</div>
+
+  <div class="options-grid">
+
+    <!-- ============================== OPTION F ============================== -->
+    <div class="option-wrapper">
+      <div>
+        <div class="option-label">Option F</div>
+        <div class="option-name">Free-text with live AI extraction</div>
+      </div>
+      <div class="sidebar-card" id="card-f">
+        <!-- Prompt Preview -->
+        <div class="prompt-preview" id="f-preview">
+          <span class="prompt-star">✦</span>
+          <span class="prompt-placeholder">Start typing to build your search…</span>
+        </div>
+
+        <div class="section-label">What are you looking for?</div>
+
+        <textarea
+          class="freetext-area"
+          id="f-textarea"
+          rows="3"
+          placeholder="Describe what you're looking for in your own words…"
+        ></textarea>
+
+        <div>
+          <div class="understood-row" id="f-understood">
+            <span class="understood-label">Understood:</span>
+            <span style="font-size:11px;color:#CCC;font-style:italic;">nothing yet</span>
+          </div>
+        </div>
+
+        <div class="freetext-hint">Not sure? Try: "I need a reliable family SUV under 30K with good COE remaining"</div>
+
+        <a class="reset-link" onclick="resetF()">Reset</a>
+      </div>
+    </div>
+
+    <!-- ============================== OPTION G ============================== -->
+    <div class="option-wrapper">
+      <div>
+        <div class="option-label">Option G</div>
+        <div class="option-name">Priority sliders</div>
+      </div>
+      <div class="sidebar-card" id="card-g">
+        <!-- Prompt Preview -->
+        <div class="prompt-preview" id="g-preview">
+          <span class="prompt-star">✦</span>
+          <span class="prompt-placeholder">Adjust sliders to refine your search…</span>
+        </div>
+
+        <div class="section-label">Tune your priorities</div>
+
+        <!-- Slider 1: Performance -->
+        <div class="slider-row">
+          <div class="slider-meta">
+            <span class="slider-dim-label">Performance</span>
+            <span class="slider-val-badge" id="g-perf-badge">—</span>
+          </div>
+          <div class="slider-poles"><span>Economy</span><span>Sport</span></div>
+          <input type="range" class="teal-slider" id="g-perf" min="0" max="100" value="50" oninput="updateG()">
+        </div>
+
+        <!-- Slider 2: Condition -->
+        <div class="slider-row">
+          <div class="slider-meta">
+            <span class="slider-dim-label">Condition</span>
+            <span class="slider-val-badge" id="g-cond-badge">—</span>
+          </div>
+          <div class="slider-poles"><span>Flexible</span><span>Like new</span></div>
+          <input type="range" class="teal-slider" id="g-cond" min="0" max="100" value="50" oninput="updateG()">
+        </div>
+
+        <!-- Slider 3: Budget -->
+        <div class="slider-row">
+          <div class="slider-meta">
+            <span class="slider-dim-label">Budget</span>
+            <span class="slider-val-badge" id="g-budget-badge">—</span>
+          </div>
+          <div class="slider-poles"><span>Open</span><span>Strict (&lt;$30K)</span></div>
+          <input type="range" class="teal-slider" id="g-budget" min="0" max="100" value="50" oninput="updateG()">
+        </div>
+
+        <!-- Slider 4: COE -->
+        <div class="slider-row">
+          <div class="slider-meta">
+            <span class="slider-dim-label">COE remaining</span>
+            <span class="slider-val-badge" id="g-coe-badge">—</span>
+          </div>
+          <div class="slider-poles"><span>Short</span><span>Long (5yr+)</span></div>
+          <input type="range" class="teal-slider" id="g-coe" min="0" max="100" value="50" oninput="updateG()">
+        </div>
+
+        <a class="reset-link" onclick="resetG()">Reset</a>
+      </div>
+    </div>
+
+    <!-- ============================== OPTION H ============================== -->
+    <div class="option-wrapper">
+      <div>
+        <div class="option-label">Option H</div>
+        <div class="option-name">Conversational Q&amp;A flow</div>
+      </div>
+      <div class="sidebar-card" id="card-h">
+        <!-- Prompt Preview -->
+        <div class="prompt-preview" id="h-preview">
+          <span class="prompt-star">✦</span>
+          <span class="prompt-placeholder">Answer a few quick questions…</span>
+        </div>
+
+        <!-- Progress dots -->
+        <div class="qa-progress">
+          <div class="qa-dot active" id="h-dot-0"></div>
+          <div class="qa-dot" id="h-dot-1"></div>
+          <div class="qa-dot" id="h-dot-2"></div>
+          <div class="qa-dot" id="h-dot-3"></div>
+        </div>
+
+        <!-- Sliding viewport -->
+        <div class="qa-viewport">
+          <div class="qa-track" id="h-track">
+
+            <!-- Step 1 -->
+            <div class="qa-step" id="h-step-0">
+              <div class="qa-question">Who's the car mainly for?</div>
+              <div class="qa-option" onclick="qaSelect('h',0,0,'Just me')">
+                <div class="qa-radio"></div>
+                <span class="qa-option-text">Just me</span>
+              </div>
+              <div class="qa-option" onclick="qaSelect('h',0,1,'My family')">
+                <div class="qa-radio"></div>
+                <span class="qa-option-text">My family</span>
+              </div>
+              <div class="qa-option" onclick="qaSelect('h',0,2,'My partner &amp; I')">
+                <div class="qa-radio"></div>
+                <span class="qa-option-text">My partner &amp; I</span>
+              </div>
+              <div class="qa-option" onclick="qaSelect('h',0,3,'Business use')">
+                <div class="qa-radio"></div>
+                <span class="qa-option-text">Business use</span>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="qa-step" id="h-step-1">
+              <div class="qa-question">How important is budget?</div>
+              <div class="qa-option" onclick="qaSelect('h',1,0,'Very important — under $30K')">
+                <div class="qa-radio"></div>
+                <span class="qa-option-text">Very important — under $30K</span>
+              </div>
+              <div class="qa-option" onclick="qaSelect('h',1,1,'Somewhat — flexible within reason')">
+                <div class="qa-radio"></div>
+                <span class="qa-option-text">Somewhat — flexible within reason</span>
+              </div>
+              <div class="qa-option" onclick="qaSelect('h',1,2,'Not a concern')">
+                <div class="qa-radio"></div>
+                <span class="qa-option-text">Not a concern</span>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="qa-step" id="h-step-2">
+              <div class="qa-question">What matters most?</div>
+              <div class="qa-option" onclick="qaSelect('h',2,0,'Reliability &amp; low maintenance')">
+                <div class="qa-radio"></div>
+                <span class="qa-option-text">Reliability &amp; low maintenance</span>
+              </div>
+              <div class="qa-option" onclick="qaSelect('h',2,1,'Performance &amp; driving feel')">
+                <div class="qa-radio"></div>
+                <span class="qa-option-text">Performance &amp; driving feel</span>
+              </div>
+              <div class="qa-option" onclick="qaSelect('h',2,2,'Space &amp; practicality')">
+                <div class="qa-radio"></div>
+                <span class="qa-option-text">Space &amp; practicality</span>
+              </div>
+            </div>
+
+            <!-- Step 4: Summary -->
+            <div class="qa-step" id="h-step-3">
+              <div class="qa-summary">
+                <div class="qa-summary-title">Your search query</div>
+                <div class="qa-summary-text" id="h-summary-text">—</div>
+              </div>
+              <br>
+              <a class="qa-refine" onclick="resetH()">↩ Refine further</a>
+            </div>
+
+          </div>
+        </div>
+
+        <a class="reset-link" onclick="resetH()">Reset</a>
+      </div>
+    </div>
+
+    <!-- ============================== OPTION I ============================== -->
+    <div class="option-wrapper">
+      <div>
+        <div class="option-label">Option I</div>
+        <div class="option-name">Visual mood board</div>
+      </div>
+      <div class="sidebar-card" id="card-i">
+        <!-- Prompt Preview -->
+        <div class="prompt-preview" id="i-preview">
+          <span class="prompt-star">✦</span>
+          <span class="prompt-placeholder">Select tiles that match your vibe…</span>
+        </div>
+
+        <div class="section-label">Pick your vibe</div>
+
+        <div class="mood-grid" id="i-grid">
+          <div class="mood-tile" data-id="family" onclick="toggleMood(this)" title="Family hauler">
+            <div class="mood-check">✓</div>
+            <div class="mood-emoji">🏠</div>
+            <div class="mood-label">Family<br>hauler</div>
+          </div>
+          <div class="mood-tile" data-id="thrill" onclick="toggleMood(this)" title="Weekend thrill">
+            <div class="mood-check">✓</div>
+            <div class="mood-emoji">⚡</div>
+            <div class="mood-label">Weekend<br>thrill</div>
+          </div>
+          <div class="mood-tile" data-id="commuter" onclick="toggleMood(this)" title="Daily commuter">
+            <div class="mood-check">✓</div>
+            <div class="mood-emoji">💼</div>
+            <div class="mood-label">Daily<br>commuter</div>
+          </div>
+          <div class="mood-tile" data-id="adventure" onclick="toggleMood(this)" title="Adventure ready">
+            <div class="mood-check">✓</div>
+            <div class="mood-emoji">🏔️</div>
+            <div class="mood-label">Adventure<br>ready</div>
+          </div>
+          <div class="mood-tile" data-id="premium" onclick="toggleMood(this)" title="Premium feel">
+            <div class="mood-check">✓</div>
+            <div class="mood-emoji">💎</div>
+            <div class="mood-label">Premium<br>feel</div>
+          </div>
+          <div class="mood-tile" data-id="eco" onclick="toggleMood(this)" title="Eco-conscious">
+            <div class="mood-check">✓</div>
+            <div class="mood-emoji">🌿</div>
+            <div class="mood-label">Eco-<br>conscious</div>
+          </div>
+        </div>
+
+        <input
+          type="text"
+          class="mood-extra-input"
+          id="i-extra"
+          placeholder="Anything else? (optional)"
+          oninput="updateIMoodPreview()"
+        >
+
+        <a class="reset-link" onclick="resetI()">Reset</a>
+      </div>
+    </div>
+
+    <!-- ============================== OPTION J ============================== -->
+    <div class="option-wrapper">
+      <div>
+        <div class="option-label">Option J</div>
+        <div class="option-name">Drag-to-prioritise</div>
+      </div>
+      <div class="sidebar-card" id="card-j">
+        <!-- Prompt Preview -->
+        <div class="prompt-preview" id="j-preview">
+          <span class="prompt-star">✦</span>
+          <span class="prompt-placeholder">Drag cards to prioritise what matters…</span>
+        </div>
+
+        <!-- Drop zones -->
+        <div class="dnd-dropzones">
+          <div class="dnd-zone must" id="j-zone-must" ondragover="dndDragover(event,'must')" ondragleave="dndDragleave(event,'must')" ondrop="dndDrop(event,'must')">
+            <div class="dnd-zone-label">Must have</div>
+            <div class="dnd-zone-empty" id="j-must-empty">Drop here</div>
+          </div>
+          <div class="dnd-zone nice" id="j-zone-nice" ondragover="dndDragover(event,'nice')" ondragleave="dndDragleave(event,'nice')" ondrop="dndDrop(event,'nice')">
+            <div class="dnd-zone-label">Nice to have</div>
+            <div class="dnd-zone-empty" id="j-nice-empty">Drop here</div>
+          </div>
+        </div>
+
+        <!-- Available pool -->
+        <div class="dnd-available-label">Available — click or drag to assign</div>
+        <div class="dnd-pool" id="j-pool">
+          <div class="dnd-card" draggable="true" data-id="family" ondragstart="dndDragStart(event)" onclick="dndClick(this)">
+            <span class="dnd-card-icon">👨‍👩‍👧</span>
+            <span class="dnd-card-label">Family-friendly</span>
+            <span class="dnd-card-state">—</span>
+          </div>
+          <div class="dnd-card" draggable="true" data-id="mileage" ondragstart="dndDragStart(event)" onclick="dndClick(this)">
+            <span class="dnd-card-icon">📏</span>
+            <span class="dnd-card-label">Low mileage</span>
+            <span class="dnd-card-state">—</span>
+          </div>
+          <div class="dnd-card" draggable="true" data-id="coe" ondragstart="dndDragStart(event)" onclick="dndClick(this)">
+            <span class="dnd-card-icon">📅</span>
+            <span class="dnd-card-label">5yr+ COE</span>
+            <span class="dnd-card-state">—</span>
+          </div>
+          <div class="dnd-card" draggable="true" data-id="budget" ondragstart="dndDragStart(event)" onclick="dndClick(this)">
+            <span class="dnd-card-icon">💰</span>
+            <span class="dnd-card-label">Below $30K</span>
+            <span class="dnd-card-state">—</span>
+          </div>
+          <div class="dnd-card" draggable="true" data-id="perf" ondragstart="dndDragStart(event)" onclick="dndClick(this)">
+            <span class="dnd-card-icon">⚡</span>
+            <span class="dnd-card-label">High performance</span>
+            <span class="dnd-card-state">—</span>
+          </div>
+          <div class="dnd-card" draggable="true" data-id="new" ondragstart="dndDragStart(event)" onclick="dndClick(this)">
+            <span class="dnd-card-icon">✨</span>
+            <span class="dnd-card-label">Almost like new</span>
+            <span class="dnd-card-state">—</span>
+          </div>
+        </div>
+
+        <div class="dnd-hint">Tip: click a card to cycle between unassigned → must have → nice to have</div>
+
+        <a class="reset-link" onclick="resetJ()">Reset</a>
+      </div>
+    </div>
+
+  </div><!-- end options-grid -->
+</div><!-- end max-width wrapper -->
+
+<script>
+// =====================================================================
+// HELPERS
+// =====================================================================
+function hl(text) {
+  return `<span class="prompt-highlight">${text}</span>`;
+}
+
+function setPreview(id, terms) {
+  const el = document.getElementById(id);
+  if (!terms || terms.length === 0) {
+    el.innerHTML = `<span class="prompt-star">✦</span><span class="prompt-placeholder">${
+      id === 'f-preview' ? 'Start typing to build your search…' :
+      id === 'g-preview' ? 'Adjust sliders to refine your search…' :
+      id === 'h-preview' ? 'Answer a few quick questions…' :
+      id === 'i-preview' ? 'Select tiles that match your vibe…' :
+      'Drag cards to prioritise what matters…'
+    }</span>`;
+  } else {
+    const highlighted = terms.map(t => hl(t)).join(', ');
+    el.innerHTML = `<span class="prompt-star">✦</span> I'm looking for a ${highlighted}`;
+  }
+}
+
+// =====================================================================
+// OPTION F — Free-text extraction
+// =====================================================================
+const fKeywords = [
+  { pattern: /\bfamily\b/i,              label: 'Family-friendly' },
+  { pattern: /\breliable\b/i,            label: 'Well-maintained' },
+  { pattern: /\bwell.maintained\b/i,     label: 'Well-maintained' },
+  { pattern: /\b(cheap|budget|under 30|under \$30)\b/i, label: 'Below $30K' },
+  { pattern: /\b(sporty|sport|fast|performance)\b/i,    label: 'High performance' },
+  { pattern: /\b(new|like.new|almost new)\b/i,           label: 'Almost like new' },
+  { pattern: /\b5.?yr?s?\s*(coe|left|remaining)\b/i,    label: '5yr+ COE' },
+  { pattern: /\bcoe.*(5|five)\b/i,       label: '5yr+ COE' },
+  { pattern: /\blow.?mileage\b/i,        label: '< 30K km' },
+  { pattern: /\bsuv\b/i,                 label: 'SUV' },
+  { pattern: /\bhybrid\b/i,              label: 'Hybrid/EV' },
+  { pattern: /\bev\b|\belectric\b/i,     label: 'Hybrid/EV' },
+  { pattern: /\bluxury\b/i,              label: 'Luxury interior' },
+];
+
+function extractF(text) {
+  const found = [];
+  const seen = new Set();
+  fKeywords.forEach(kw => {
+    if (kw.pattern.test(text) && !seen.has(kw.label)) {
+      found.push(kw.label);
+      seen.add(kw.label);
+    }
+  });
+  return found;
+}
+
+document.getElementById('f-textarea').addEventListener('input', function() {
+  const text = this.value;
+  const attrs = extractF(text);
+  const row = document.getElementById('f-understood');
+  if (attrs.length === 0) {
+    row.innerHTML = `<span class="understood-label">Understood:</span><span style="font-size:11px;color:#CCC;font-style:italic;">nothing yet</span>`;
+  } else {
+    const tags = attrs.map(a => `<span class="understood-tag">${a}</span>`).join('');
+    row.innerHTML = `<span class="understood-label">Understood:</span>${tags}`;
+  }
+  setPreview('f-preview', attrs);
+});
+
+function resetF() {
+  document.getElementById('f-textarea').value = '';
+  document.getElementById('f-understood').innerHTML = `<span class="understood-label">Understood:</span><span style="font-size:11px;color:#CCC;font-style:italic;">nothing yet</span>`;
+  setPreview('f-preview', []);
+}
+
+// =====================================================================
+// OPTION G — Sliders
+// =====================================================================
+function updateSliderFill(input) {
+  const pct = input.value;
+  input.style.background = `linear-gradient(to right, #1DADA0 0%, #1DADA0 ${pct}%, #E5E5E5 ${pct}%, #E5E5E5 100%)`;
+}
+
+function updateG() {
+  const perf   = parseInt(document.getElementById('g-perf').value);
+  const cond   = parseInt(document.getElementById('g-cond').value);
+  const budget = parseInt(document.getElementById('g-budget').value);
+  const coe    = parseInt(document.getElementById('g-coe').value);
+
+  // Update fills
+  ['g-perf','g-cond','g-budget','g-coe'].forEach(id => updateSliderFill(document.getElementById(id)));
+
+  // Compute attributes
+  let attrs = [];
+
+  if (perf > 85)      { attrs.push('high performance'); document.getElementById('g-perf-badge').textContent = 'Sport+'; }
+  else if (perf > 65) { attrs.push('sporty'); document.getElementById('g-perf-badge').textContent = 'Sporty'; }
+  else if (perf < 30) { attrs.push('fuel-efficient'); document.getElementById('g-perf-badge').textContent = 'Eco'; }
+  else                { document.getElementById('g-perf-badge').textContent = 'Balanced'; }
+
+  if (cond > 80)      { attrs.push('almost like new'); document.getElementById('g-cond-badge').textContent = 'Like new'; }
+  else if (cond > 50) { attrs.push('well-maintained'); document.getElementById('g-cond-badge').textContent = 'Good cond.'; }
+  else                { document.getElementById('g-cond-badge').textContent = 'Any cond.'; }
+
+  if (budget > 80)    { attrs.push('below $30K'); document.getElementById('g-budget-badge').textContent = '<$30K'; }
+  else if (budget > 60) { attrs.push('below $40K'); document.getElementById('g-budget-badge').textContent = '<$40K'; }
+  else                { document.getElementById('g-budget-badge').textContent = 'Open'; }
+
+  if (coe > 80)       { attrs.push('5yr+ COE'); document.getElementById('g-coe-badge').textContent = '5yr+'; }
+  else if (coe > 60)  { attrs.push('3yr+ COE'); document.getElementById('g-coe-badge').textContent = '3yr+'; }
+  else                { document.getElementById('g-coe-badge').textContent = 'Any COE'; }
+
+  setPreview('g-preview', attrs);
+}
+
+function resetG() {
+  ['g-perf','g-cond','g-budget','g-coe'].forEach(id => {
+    const el = document.getElementById(id);
+    el.value = 50;
+    updateSliderFill(el);
+  });
+  ['g-perf-badge','g-cond-badge','g-budget-badge','g-coe-badge'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+  setPreview('g-preview', []);
+}
+
+// Init slider fills on load
+window.addEventListener('load', function() {
+  ['g-perf','g-cond','g-budget','g-coe'].forEach(id => updateSliderFill(document.getElementById(id)));
+});
+
+// =====================================================================
+// OPTION H — Q&A Flow
+// =====================================================================
+const hState = {
+  step: 0,
+  answers: [null, null, null]
+};
+
+const hAnswerMap = [
+  // Q1
+  {
+    'Just me':          'solo-friendly',
+    'My family':        'family-friendly, spacious',
+    'My partner & I':   'comfortable, couples use',
+    'Business use':     'professional, reliable'
+  },
+  // Q2
+  {
+    'Very important — under $30K':       'below $30K',
+    'Somewhat — flexible within reason': 'reasonable budget',
+    'Not a concern':                     null
+  },
+  // Q3
+  {
+    'Reliability & low maintenance': 'well-maintained, reliable',
+    'Performance & driving feel':    'sporty, high performance',
+    'Space & practicality':          'spacious, practical'
+  }
+];
+
+function qaSelect(prefix, step, optionIdx, label) {
+  // Decode HTML entities in label
+  const decoded = label.replace(/&amp;/g, '&');
+  hState.answers[step] = decoded;
+
+  // Visually mark selected
+  const stepEl = document.getElementById(`h-step-${step}`);
+  stepEl.querySelectorAll('.qa-option').forEach((opt, i) => {
+    opt.classList.toggle('selected', i === optionIdx);
+  });
+
+  // Advance after short delay
+  setTimeout(() => {
+    if (step < 2) {
+      hState.step = step + 1;
+      hGoToStep(hState.step);
+    } else {
+      // Show summary
+      hState.step = 3;
+      hGoToStep(3);
+      hBuildSummary();
+    }
+  }, 280);
+}
+
+function hGoToStep(step) {
+  const track = document.getElementById('h-track');
+  track.style.transform = `translateX(-${step * 25}%)`;
+
+  // Update dots
+  for (let i = 0; i <= 3; i++) {
+    const dot = document.getElementById(`h-dot-${i}`);
+    if (i < step)      { dot.className = 'qa-dot done'; }
+    else if (i === step) { dot.className = 'qa-dot active'; }
+    else               { dot.className = 'qa-dot'; }
+  }
+
+  // Update preview progressively
+  hUpdatePreview();
+}
+
+function hUpdatePreview() {
+  const attrs = [];
+  hState.answers.forEach((ans, i) => {
+    if (ans === null) return;
+    const mapped = hAnswerMap[i][ans];
+    if (mapped) attrs.push(...mapped.split(', '));
+  });
+  setPreview('h-preview', attrs.length ? attrs : []);
+}
+
+function hBuildSummary() {
+  const attrs = [];
+  hState.answers.forEach((ans, i) => {
+    if (ans === null) return;
+    const mapped = hAnswerMap[i][ans];
+    if (mapped) attrs.push(...mapped.split(', '));
+  });
+  const summaryText = attrs.length
+    ? attrs.join(', ')
+    : 'No preferences set yet.';
+  document.getElementById('h-summary-text').textContent = summaryText;
+}
+
+function resetH() {
+  hState.step = 0;
+  hState.answers = [null, null, null];
+  hGoToStep(0);
+  // Clear selections
+  for (let i = 0; i < 3; i++) {
+    const stepEl = document.getElementById(`h-step-${i}`);
+    if (stepEl) stepEl.querySelectorAll('.qa-option').forEach(opt => opt.classList.remove('selected'));
+  }
+  setPreview('h-preview', []);
+}
+
+// =====================================================================
+// OPTION I — Mood Board
+// =====================================================================
+const moodAttrs = {
+  family:    ['family-friendly', 'spacious'],
+  thrill:    ['sporty', 'high performance'],
+  commuter:  ['fuel-efficient', 'reliable'],
+  adventure: ['SUV', 'all-terrain'],
+  premium:   ['luxury interior', 'low depreciation'],
+  eco:       ['hybrid/EV', 'low emissions']
+};
+
+function toggleMood(tile) {
+  tile.classList.toggle('selected');
+  updateIMoodPreview();
+}
+
+function updateIMoodPreview() {
+  const selected = document.querySelectorAll('#i-grid .mood-tile.selected');
+  let attrs = [];
+  selected.forEach(tile => {
+    const id = tile.dataset.id;
+    if (moodAttrs[id]) attrs.push(...moodAttrs[id]);
+  });
+  // Add free text
+  const extra = document.getElementById('i-extra').value.trim();
+  if (extra) attrs.push(extra);
+  setPreview('i-preview', attrs);
+}
+
+function resetI() {
+  document.querySelectorAll('#i-grid .mood-tile').forEach(t => t.classList.remove('selected'));
+  document.getElementById('i-extra').value = '';
+  setPreview('i-preview', []);
+}
+
+// =====================================================================
+// OPTION J — Drag to Prioritise
+// =====================================================================
+let jDraggingId = null;
+
+const jCardLabels = {
+  family:  'family-friendly',
+  mileage: 'low mileage',
+  coe:     '5yr+ COE',
+  budget:  'below $30K',
+  perf:    'high performance',
+  new:     'almost like new'
+};
+
+// State: 'none' | 'must' | 'nice'
+const jState = {};
+Object.keys(jCardLabels).forEach(k => jState[k] = 'none');
+
+function dndDragStart(e) {
+  jDraggingId = e.currentTarget.dataset.id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', jDraggingId);
+  setTimeout(() => e.currentTarget.classList.remove('dragging'), 100);
+}
+
+function dndDragover(e, zone) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.getElementById(`j-zone-${zone}`).classList.add('dragover');
+}
+
+function dndDragleave(e, zone) {
+  document.getElementById(`j-zone-${zone}`).classList.remove('dragover');
+}
+
+function dndDrop(e, zone) {
+  e.preventDefault();
+  document.getElementById(`j-zone-${zone}`).classList.remove('dragover');
+  const id = e.dataTransfer.getData('text/plain') || jDraggingId;
+  if (!id) return;
+  jAssign(id, zone);
+}
+
+function dndClick(card) {
+  const id = card.dataset.id;
+  const current = jState[id];
+  if (current === 'none') jAssign(id, 'must');
+  else if (current === 'must') jAssign(id, 'nice');
+  else jAssign(id, 'none');
+}
+
+function jAssign(id, zone) {
+  jState[id] = zone;
+
+  // Update card appearance
+  const card = document.querySelector(`#j-pool .dnd-card[data-id="${id}"]`);
+  card.classList.remove('in-must', 'in-nice');
+  const stateLabel = card.querySelector('.dnd-card-state');
+
+  if (zone === 'must') {
+    card.classList.add('in-must');
+    stateLabel.textContent = 'Must';
+  } else if (zone === 'nice') {
+    card.classList.add('in-nice');
+    stateLabel.textContent = 'Nice';
+  } else {
+    stateLabel.textContent = '—';
+  }
+
+  // Update empty state indicators
+  const mustCards = Object.keys(jState).filter(k => jState[k] === 'must');
+  const niceCards = Object.keys(jState).filter(k => jState[k] === 'nice');
+  document.getElementById('j-must-empty').style.display = mustCards.length ? 'none' : 'block';
+  document.getElementById('j-nice-empty').style.display = niceCards.length ? 'none' : 'block';
+
+  // Update zone content display
+  jRenderZones();
+  jUpdatePreview();
+}
+
+function jRenderZones() {
+  // Just ensure empty placeholders are visible/hidden
+  const mustCards = Object.keys(jState).filter(k => jState[k] === 'must');
+  const niceCards = Object.keys(jState).filter(k => jState[k] === 'nice');
+  document.getElementById('j-must-empty').style.display = mustCards.length ? 'none' : '';
+  document.getElementById('j-nice-empty').style.display = niceCards.length ? 'none' : '';
+}
+
+function jUpdatePreview() {
+  const mustItems = Object.keys(jState).filter(k => jState[k] === 'must').map(k => jCardLabels[k]);
+  const niceItems = Object.keys(jState).filter(k => jState[k] === 'nice').map(k => jCardLabels[k]);
+  const all = [...mustItems, ...niceItems];
+  setPreview('j-preview', all.length ? all : []);
+}
+
+function resetJ() {
+  Object.keys(jState).forEach(k => jState[k] = 'none');
+  document.querySelectorAll('#j-pool .dnd-card').forEach(card => {
+    card.classList.remove('in-must', 'in-nice');
+    card.querySelector('.dnd-card-state').textContent = '—';
+  });
+  document.getElementById('j-must-empty').style.display = '';
+  document.getElementById('j-nice-empty').style.display = '';
+  setPreview('j-preview', []);
+}
+</script>
+</body>
+</html>
