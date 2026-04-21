@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Animation Exploration — AI Prompt Generation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #F2F2F2;
+    color: #111;
+    padding: 40px 20px 80px;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 48px;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .page-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 8px;
+  }
+
+  .page-header p {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+  }
+
+  .cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    align-items: center;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+    padding: 24px 28px 28px;
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .card-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 16px;
+  }
+
+  .prompt-display {
+    min-height: 80px;
+    padding: 16px;
+    background: #F8F8F8;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #111;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+
+  .prompt-inner {
+    display: inline;
+    word-break: break-word;
+  }
+
+  .replay-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    background: none;
+    border: 1px solid #E0E0E0;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .replay-btn:hover {
+    color: #1DADA0;
+    border-color: #1DADA0;
+    background: rgba(29,173,160,0.05);
+  }
+
+  .chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s, color 0.15s, border-color 0.15s;
+    border: 1.5px solid #E0E0E0;
+    background: #fff;
+    color: #333;
+    font-family: 'Inter', sans-serif;
+  }
+  .chip:hover {
+    transform: scale(1.03);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .chip.selected {
+    background: #1DADA0;
+    border-color: #1DADA0;
+    color: #fff;
+  }
+
+  /* ============================================================
+     GRADIENT HELPERS
+  ============================================================ */
+  .grad {
+    background: linear-gradient(90deg, #1DADA0 0%, #5B9BD5 50%, #8B5CF6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ============================================================
+     OPTION A — CHARACTER TYPEWRITER
+  ============================================================ */
+  #optA .prompt-display {
+    display: block;
+    position: relative;
+  }
+
+  .char-span {
+    display: inline;
+    color: #111;
+    transition: color 0.18s ease;
+  }
+  .char-span.state-hidden {
+    color: transparent !important;
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+  }
+  .char-span.state-gradient {
+    background: linear-gradient(90deg, #1DADA0 0%, #5B9BD5 50%, #8B5CF6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .char-span.state-black {
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    color: #111;
+  }
+
+  .cursor-a {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    vertical-align: middle;
+    margin-left: 1px;
+    margin-bottom: -0.05em;
+    background: linear-gradient(180deg, #1DADA0, #8B5CF6);
+    border-radius: 1px;
+    opacity: 1;
+    transition: opacity 0.3s;
+  }
+  .cursor-a.blink {
+    animation: cursorBlink 0.55s step-end infinite;
+  }
+  @keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  .cursor-a.fade-out {
+    animation: none;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+
+  /* ============================================================
+     OPTION B — WORD-BY-WORD STREAMING
+  ============================================================ */
+  .word-span {
+    display: inline;
+    opacity: 0;
+    transition: opacity 0.08s ease;
+  }
+  .word-span.state-appearing {
+    opacity: 1;
+    background: linear-gradient(90deg, #1DADA0 0%, #5B9BD5 50%, #8B5CF6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .word-span.state-settled {
+    opacity: 1;
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    color: #111;
+    transition: color 0.2s ease, background 0.2s ease, opacity 0.08s ease;
+  }
+
+  /* ============================================================
+     OPTION C — GRADIENT PAINT SWEEP
+  ============================================================ */
+  @keyframes gradient-sweep {
+    0%   { background-position: -100% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .sweep-text {
+    display: inline;
+    color: #111;
+  }
+  .sweep-text.sweeping {
+    background: linear-gradient(90deg, #111 0%, #111 30%, #1DADA0 43%, #5B9BD5 50%, #8B5CF6 57%, #111 70%, #111 100%);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradient-sweep 900ms ease forwards;
+  }
+
+  /* ============================================================
+     OPTION D — TOKEN CHUNKS
+  ============================================================ */
+  .chunk-span {
+    display: inline;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.1s ease, transform 0.1s ease, color 0.2s ease;
+    color: #1DADA0;
+  }
+  .chunk-span.state-appearing {
+    opacity: 1;
+    transform: translateY(0);
+    background: linear-gradient(90deg, #1DADA0 0%, #5B9BD5 50%, #8B5CF6 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .chunk-span.state-settled {
+    opacity: 1;
+    transform: translateY(0);
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    color: #111;
+  }
+
+  /* ============================================================
+     OPTION E — CURSOR GLOW / TRAILING GRADIENT
+  ============================================================ */
+  #optE .prompt-display {
+    display: block;
+    position: relative;
+  }
+  .glow-text-wrapper {
+    display: inline;
+    position: relative;
+  }
+  .glow-text {
+    display: inline;
+    --typed-pct: 0%;
+    background: linear-gradient(
+      90deg,
+      #111 0%,
+      #111 calc(var(--typed-pct) - 8%),
+      #1DADA0 calc(var(--typed-pct) - 3%),
+      #8B5CF6 var(--typed-pct),
+      transparent calc(var(--typed-pct) + 1%)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    white-space: pre-wrap;
+  }
+  .cursor-e {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    vertical-align: middle;
+    margin-left: 1px;
+    margin-bottom: -0.05em;
+    background: #1DADA0;
+    border-radius: 1px;
+    box-shadow: 0 0 8px #1DADA0, 0 0 16px rgba(29,173,160,0.4);
+    opacity: 1;
+  }
+  .cursor-e.blink {
+    animation: cursorBlink 0.55s step-end infinite;
+  }
+  .cursor-e.fade-out {
+    animation: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Typing Animation Exploration — AI Prompt Generation</h1>
+  <p>Select chips to trigger a new prompt. Each option shows a different animation approach.</p>
+</div>
+
+<div class="cards-container">
+
+  <!-- ============================================================
+       OPTION A
+  ============================================================ -->
+  <div class="card" id="optA">
+    <div class="card-label">Option A — Character Typewriter with gradient cursor</div>
+    <div class="prompt-display" id="promptA">
+      <span class="prompt-inner" id="promptInnerA"></span><span class="cursor-a" id="cursorA"></span>
+    </div>
+    <button class="replay-btn" onclick="replayA()">&#9654; Replay</button>
+    <div class="chips-row" id="chipsA"></div>
+  </div>
+
+  <!-- ============================================================
+       OPTION B
+  ============================================================ -->
+  <div class="card" id="optB">
+    <div class="card-label">Option B — Word-by-word streaming (like LLM output)</div>
+    <div class="prompt-display" id="promptB">
+      <span class="prompt-inner" id="promptInnerB"></span>
+    </div>
+    <button class="replay-btn" onclick="replayB()">&#9654; Replay</button>
+    <div class="chips-row" id="chipsB"></div>
+  </div>
+
+  <!-- ============================================================
+       OPTION C
+  ============================================================ -->
+  <div class="card" id="optC">
+    <div class="card-label">Option C — Gradient paint sweep</div>
+    <div class="prompt-display" id="promptC">
+      <span class="prompt-inner" id="promptInnerC"></span>
+    </div>
+    <button class="replay-btn" onclick="replayC()">&#9654; Replay</button>
+    <div class="chips-row" id="chipsC"></div>
+  </div>
+
+  <!-- ============================================================
+       OPTION D
+  ============================================================ -->
+  <div class="card" id="optD">
+    <div class="card-label">Option D — Token chunks (2–3 words at a time)</div>
+    <div class="prompt-display" id="promptD">
+      <span class="prompt-inner" id="promptInnerD"></span>
+    </div>
+    <button class="replay-btn" onclick="replayD()">&#9654; Replay</button>
+    <div class="chips-row" id="chipsD"></div>
+  </div>
+
+  <!-- ============================================================
+       OPTION E
+  ============================================================ -->
+  <div class="card" id="optE">
+    <div class="card-label">Option E — Cursor glow / trailing gradient</div>
+    <div class="prompt-display" id="promptE">
+      <span class="glow-text" id="glowText"></span><span class="cursor-e" id="cursorE"></span>
+    </div>
+    <button class="replay-btn" onclick="replayE()">&#9654; Replay</button>
+    <div class="chips-row" id="chipsE"></div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// SHARED UTILS
+// ============================================================
+
+const CHIP_LABELS = ['Family-friendly', 'Asian', 'SUV', '5 seaters', 'Performance', 'Below $30K', '5yr+ COE'];
+
+function buildPrompt(selected) {
+  const attrs = [];
+  if (selected.has('Family-friendly')) attrs.push('family-friendly');
+  if (selected.has('Asian')) attrs.push('Asian');
+  if (selected.has('SUV')) attrs.push('SUV');
+  if (selected.has('Performance')) attrs.push('high performance');
+  if (selected.has('5 seaters')) attrs.push('spacious');
+  if (selected.has('Below $30K')) attrs.push('below S$30K');
+  if (selected.has('5yr+ COE')) attrs.push('5+ years COE');
+  if (attrs.length === 0) return "I'm looking for a car...";
+  if (attrs.length === 1) return `I'm looking for a ${attrs[0]} car`;
+  const last = attrs.pop();
+  return `I'm looking for a ${attrs.join(', ')} car with ${last}`;
+}
+
+function makeChips(containerId, selectedSet, onToggle) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  CHIP_LABELS.forEach(label => {
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (selectedSet.has(label) ? ' selected' : '');
+    btn.textContent = label;
+    btn.onclick = () => {
+      if (selectedSet.has(label)) selectedSet.delete(label);
+      else selectedSet.add(label);
+      makeChips(containerId, selectedSet, onToggle);
+      onToggle();
+    };
+    container.appendChild(btn);
+  });
+}
+
+// ============================================================
+// OPTION A — CHARACTER TYPEWRITER
+// ============================================================
+(function() {
+  const selectedA = new Set();
+  let timerA = null;
+
+  function startA() {
+    // Cancel previous
+    if (timerA) { clearInterval(timerA); timerA = null; }
+
+    const text = buildPrompt(selectedA);
+    const inner = document.getElementById('promptInnerA');
+    const cursor = document.getElementById('cursorA');
+
+    // Build spans
+    inner.innerHTML = '';
+    cursor.className = 'cursor-a';
+    cursor.style.opacity = '1';
+
+    const spans = [];
+    for (let i = 0; i < text.length; i++) {
+      const s = document.createElement('span');
+      s.className = 'char-span state-hidden';
+      s.textContent = text[i] === ' ' ? '\u00a0' : text[i];
+      inner.appendChild(s);
+      spans.push(s);
+    }
+
+    let charIndex = 0;
+    const WINDOW = 3;
+
+    function tick() {
+      if (charIndex >= spans.length) {
+        clearInterval(timerA);
+        timerA = null;
+        // Settle last window to black
+        for (let i = 0; i < spans.length; i++) {
+          spans[i].className = 'char-span state-black';
+        }
+        // Blink cursor 3×, then fade out
+        cursor.classList.add('blink');
+        let blinks = 0;
+        const blinkTimer = setInterval(() => {
+          blinks++;
+          if (blinks >= 6) { // 3 full blink cycles (on+off)
+            clearInterval(blinkTimer);
+            cursor.classList.remove('blink');
+            cursor.classList.add('fade-out');
+          }
+        }, 275);
+        return;
+      }
+
+      // Update states
+      for (let i = 0; i < spans.length; i++) {
+        if (i > charIndex) {
+          spans[i].className = 'char-span state-hidden';
+        } else if (i >= charIndex - WINDOW && i <= charIndex) {
+          spans[i].className = 'char-span state-gradient';
+        } else {
+          spans[i].className = 'char-span state-black';
+        }
+      }
+      charIndex++;
+    }
+
+    timerA = setInterval(tick, 28);
+  }
+
+  window.replayA = startA;
+  makeChips('chipsA', selectedA, startA);
+  startA();
+})();
+
+// ============================================================
+// OPTION B — WORD-BY-WORD STREAMING
+// ============================================================
+(function() {
+  const selectedB = new Set();
+  let timerB = null;
+
+  function startB() {
+    if (timerB) { clearTimeout(timerB); timerB = null; }
+
+    const text = buildPrompt(selectedB);
+    const inner = document.getElementById('promptInnerB');
+    inner.innerHTML = '';
+
+    // Split into words, preserving spaces
+    const tokens = text.split(/(\s+)/);
+    const wordSpans = [];
+    const spaceSpans = [];
+
+    tokens.forEach((tok) => {
+      const s = document.createElement('span');
+      if (/^\s+$/.test(tok)) {
+        s.className = 'word-span state-settled';
+        s.textContent = tok;
+        s.style.opacity = '1';
+        spaceSpans.push(s);
+      } else {
+        s.className = 'word-span';
+        s.textContent = tok;
+        wordSpans.push(s);
+      }
+      inner.appendChild(s);
+    });
+
+    let wordIdx = 0;
+
+    function nextWord() {
+      if (wordIdx > 0) {
+        // Settle previous word
+        const prev = wordSpans[wordIdx - 1];
+        prev.className = 'word-span state-settled';
+      }
+      if (wordIdx >= wordSpans.length) {
+        timerB = null;
+        return;
+      }
+      const current = wordSpans[wordIdx];
+      current.className = 'word-span state-appearing';
+      wordIdx++;
+      timerB = setTimeout(nextWord, 120);
+    }
+
+    nextWord();
+  }
+
+  window.replayB = startB;
+  makeChips('chipsB', selectedB, startB);
+  startB();
+})();
+
+// ============================================================
+// OPTION C — GRADIENT PAINT SWEEP
+// ============================================================
+(function() {
+  const selectedC = new Set();
+
+  function startC() {
+    const text = buildPrompt(selectedC);
+    const inner = document.getElementById('promptInnerC');
+
+    // Set text, remove class, force reflow, add class
+    inner.className = 'sweep-text';
+    inner.textContent = text;
+
+    // Force reflow to reset animation
+    void inner.offsetWidth;
+
+    inner.classList.add('sweeping');
+
+    // After animation, revert to plain black text
+    const onEnd = () => {
+      inner.removeEventListener('animationend', onEnd);
+      inner.className = 'sweep-text';
+      inner.style.color = '#111';
+    };
+    inner.addEventListener('animationend', onEnd);
+  }
+
+  window.replayC = startC;
+  makeChips('chipsC', selectedC, startC);
+  startC();
+})();
+
+// ============================================================
+// OPTION D — TOKEN CHUNKS
+// ============================================================
+(function() {
+  const selectedD = new Set();
+  let timerD = null;
+
+  function chunkify(text) {
+    // Split text into natural language chunks of ~2-3 words
+    const words = text.split(' ');
+    const chunks = [];
+    let i = 0;
+
+    // Try to respect punctuation: keep comma-attached words together
+    while (i < words.length) {
+      if (i === 0 && words.length > 1) {
+        // "I'm looking" together
+        chunks.push(words.slice(0, 2).join(' '));
+        i = 2;
+      } else if (words[i] === 'for' && i + 1 < words.length && words[i+1] === 'a') {
+        chunks.push('for a');
+        i += 2;
+      } else if (words[i] === 'with' && i + 1 < words.length) {
+        // "with X Y" — take 2 following words
+        const end = Math.min(i + 3, words.length);
+        chunks.push(words.slice(i, end).join(' '));
+        i = end;
+      } else {
+        // Take 1–2 words, keeping comma-attached words
+        const word = words[i];
+        if (word.endsWith(',') && i + 1 < words.length) {
+          chunks.push(word + ' ' + words[i+1]);
+          i += 2;
+        } else {
+          chunks.push(word);
+          i++;
+        }
+      }
+    }
+    return chunks;
+  }
+
+  function startD() {
+    if (timerD) { clearTimeout(timerD); timerD = null; }
+
+    const text = buildPrompt(selectedD);
+    const inner = document.getElementById('promptInnerD');
+    inner.innerHTML = '';
+
+    const chunks = chunkify(text);
+    const spans = [];
+
+    chunks.forEach((chunk, idx) => {
+      if (idx > 0) {
+        const space = document.createElement('span');
+        space.textContent = ' ';
+        space.style.color = '#111';
+        space.style.opacity = '1';
+        inner.appendChild(space);
+      }
+      const s = document.createElement('span');
+      s.className = 'chunk-span';
+      s.textContent = chunk;
+      inner.appendChild(s);
+      spans.push(s);
+    });
+
+    let idx = 0;
+
+    function nextChunk() {
+      if (idx > 0) {
+        spans[idx - 1].className = 'chunk-span state-settled';
+      }
+      if (idx >= spans.length) {
+        timerD = null;
+        return;
+      }
+      spans[idx].className = 'chunk-span state-appearing';
+      idx++;
+      timerD = setTimeout(nextChunk, 180);
+    }
+
+    nextChunk();
+  }
+
+  window.replayD = startD;
+  makeChips('chipsD', selectedD, startD);
+  startD();
+})();
+
+// ============================================================
+// OPTION E — CURSOR GLOW / TRAILING GRADIENT
+// ============================================================
+(function() {
+  const selectedE = new Set();
+  let timerE = null;
+
+  function startE() {
+    if (timerE) { clearInterval(timerE); timerE = null; }
+
+    const text = buildPrompt(selectedE);
+    const glowText = document.getElementById('glowText');
+    const cursor = document.getElementById('cursorE');
+
+    glowText.textContent = '';
+    glowText.style.setProperty('--typed-pct', '0%');
+    cursor.className = 'cursor-e';
+    cursor.style.opacity = '1';
+
+    let charIndex = 0;
+
+    function tick() {
+      if (charIndex > text.length) {
+        clearInterval(timerE);
+        timerE = null;
+
+        // Settle: animate --typed-pct to 110% so all text is black
+        let pct = charIndex / text.length * 100;
+        const settle = setInterval(() => {
+          pct += 4;
+          glowText.style.setProperty('--typed-pct', pct + '%');
+          if (pct >= 110) {
+            clearInterval(settle);
+            // Final: plain black
+            glowText.style.background = 'none';
+            glowText.style.webkitBackgroundClip = 'unset';
+            glowText.style.backgroundClip = 'unset';
+            glowText.style.color = '#111';
+            // Blink then fade cursor
+            cursor.classList.add('blink');
+            setTimeout(() => {
+              cursor.classList.remove('blink');
+              cursor.classList.add('fade-out');
+            }, 1650);
+          }
+        }, 16);
+        return;
+      }
+
+      glowText.textContent = text.slice(0, charIndex);
+      const pct = text.length > 0 ? (charIndex / text.length) * 100 : 0;
+      glowText.style.setProperty('--typed-pct', pct + '%');
+      charIndex++;
+    }
+
+    timerE = setInterval(tick, 25);
+  }
+
+  window.replayE = startE;
+  makeChips('chipsE', selectedE, startE);
+  startE();
+})();
+</script>
+</body>
+</html>
