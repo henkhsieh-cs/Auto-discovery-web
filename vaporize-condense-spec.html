@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vaporize & Condense — Interaction Spec</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    :root {
+      --accent:       #1a4d4d;
+      --accent-soft:  #f0f7f7;
+      --fluid:        cubic-bezier(0.16, 1, 0.3, 1);
+      --spring:       linear(0,0.009,0.035,0.076,0.13,0.193,0.264,0.339,0.418,0.496,0.573,0.645,0.71,0.769,0.818,0.859,0.892,0.917,0.936,0.95,0.961,0.969,0.976,0.982,0.987,0.99,0.993,0.995,0.997,0.998,0.999,1);
+      --page-bg:      #F0F0F0;
+      --card-bg:      #ffffff;
+      --ink:          #111111;
+      --ink-sub:      #666666;
+      --ink-faint:    #999999;
+      --border:       #E8E8E8;
+      --code-bg:      #F6F6F6;
+      --tag-phase1:   #FFF3E0;
+      --tag-phase1-t: #E65100;
+      --tag-phase2:   #E8F5E9;
+      --tag-phase2-t: #2E7D32;
+      --tag-phase3:   #E3F2FD;
+      --tag-phase3-t: #1565C0;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--page-bg);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 48px 32px 80px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      max-width: 1100px;
+      margin: 0 auto 48px;
+    }
+    .page-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 8px;
+    }
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .page-sub {
+      font-size: 14px;
+      color: var(--ink-sub);
+    }
+
+    /* ── Layout: demo left, spec right ── */
+    .layout {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 375px 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    /* ── Phone frame ── */
+    .phone-wrap {
+      position: sticky;
+      top: 32px;
+    }
+    .phone-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 12px;
+    }
+    .phone-frame {
+      width: 375px;
+      height: 740px;
+      background: #fff;
+      border-radius: 44px;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.14), 0 0 0 10px #111;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .status-bar {
+      height: 44px;
+      padding: 0 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .phone-content {
+      flex: 1;
+      padding: 20px 20px 28px;
+      overflow-y: auto;
+    }
+
+    /* Summary */
+    .summary {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+    .summary span { color: var(--accent); }
+
+    /* Thumbnails */
+    .thumbnails {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .thumb {
+      flex: 1;
+      height: 72px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #eee;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Question */
+    .q-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .q-bar {
+      width: 2px;
+      height: 18px;
+      background: var(--accent);
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* Chips */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      padding: 7px 13px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.4s var(--fluid);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .chip.primary {
+      background: var(--accent-soft);
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .chip.suggested {
+      background: #fff;
+      border: 1.5px dashed #ccc;
+      color: #666;
+    }
+
+    /* Vaporize */
+    .chip.vaporize {
+      opacity: 0;
+      transform: scale(1.5);
+      filter: blur(4px);
+      transition: opacity 300ms var(--fluid),
+                  transform 300ms var(--fluid),
+                  filter 300ms var(--fluid);
+    }
+
+    /* Condense */
+    @keyframes condenseAnim {
+      from { opacity: 0; transform: scale(0.5); }
+      to   { opacity: 1; transform: scale(1);   }
+    }
+    .chip.condense {
+      animation: condenseAnim 400ms var(--fluid) both;
+    }
+
+    /* Deselect exit */
+    @keyframes deselectExit {
+      from { opacity: 1; transform: scale(1); }
+      to   { opacity: 0; transform: scale(0.8); }
+    }
+    .chip.deselect-exit {
+      animation: deselectExit 200ms var(--fluid) both;
+    }
+
+    /* Replay button */
+    .replay-btn {
+      margin-top: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: none;
+      border-radius: 8px;
+      padding: 7px 12px;
+      cursor: pointer;
+      transition: opacity 150ms;
+    }
+    .replay-btn:hover { opacity: 0.7; }
+
+    /* ── Spec panel ── */
+    .spec-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .spec-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+
+    .spec-card-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 16px;
+    }
+
+    .concept-text {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--ink-sub);
+    }
+    .concept-text strong { color: var(--ink); }
+
+    /* Phase blocks */
+    .phase {
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .phase:last-child { margin-bottom: 0; }
+    .phase-1 { background: var(--tag-phase1); }
+    .phase-2 { background: var(--tag-phase2); }
+    .phase-3 { background: var(--tag-phase3); }
+    .phase-deselect { background: #F3E5F5; }
+
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .phase-tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .phase-1 .phase-tag  { background: var(--tag-phase1-t); color: #fff; }
+    .phase-2 .phase-tag  { background: var(--tag-phase2-t); color: #fff; }
+    .phase-3 .phase-tag  { background: var(--tag-phase3-t); color: #fff; }
+    .phase-deselect .phase-tag { background: #7B1FA2; color: #fff; }
+
+    .phase-timing {
+      font-size: 11px;
+      color: var(--ink-faint);
+      font-weight: 500;
+    }
+    .phase-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    /* Spec rows */
+    .spec-rows { display: flex; flex-direction: column; gap: 6px; }
+    .spec-row {
+      display: grid;
+      grid-template-columns: 130px 1fr;
+      gap: 8px;
+      font-size: 12.5px;
+    }
+    .spec-key {
+      color: var(--ink-faint);
+      font-weight: 500;
+    }
+    .spec-val {
+      color: var(--ink);
+      font-weight: 500;
+    }
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11.5px;
+      background: rgba(0,0,0,0.06);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Token table */
+    .token-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    .token-table th {
+      text-align: left;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      padding: 0 12px 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .token-table td {
+      padding: 9px 12px 9px 0;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .token-table tr:last-child td { border-bottom: none; }
+
+    /* Chip state preview */
+    .chip-states {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .chip-state-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .chip-state-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .demo-chip {
+      padding: 7px 13px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      pointer-events: none;
+    }
+    .demo-chip.primary {
+      background: var(--accent-soft);
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+    }
+    .demo-chip.suggested {
+      background: #fff;
+      border: 1.5px dashed #ccc;
+      color: #666;
+      font-weight: 500;
+    }
+
+    /* Easing visual */
+    .easing-wrap {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .easing-item { flex: 1; min-width: 140px; }
+    .easing-name {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 8px;
+    }
+    .easing-curve {
+      width: 100%;
+      height: 80px;
+    }
+    .easing-val {
+      font-size: 11px;
+      color: var(--ink-sub);
+      margin-top: 6px;
+      word-break: break-all;
+    }
+
+    /* Footer note */
+    .footer-note {
+      font-size: 12px;
+      color: var(--ink-faint);
+      margin-top: 4px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Page header ── -->
+<header class="page-header">
+  <div class="page-eyebrow">Interaction Spec · Quick Refine · Recipe 7</div>
+  <h1 class="page-title">Vaporize &amp; Condense</h1>
+  <p class="page-sub">Particle-style chip transition — tap a suggestion to dismiss and reveal new options.</p>
+</header>
+
+<div class="layout">
+
+  <!-- ── LEFT: Phone demo ── -->
+  <div class="phone-wrap">
+    <div class="phone-label">Interactive Demo</div>
+    <div class="phone-frame">
+      <div class="status-bar"><span>9:41</span><span>🧤</span></div>
+      <div class="phone-content">
+        <div class="summary">
+          I'm looking for a <span id="sumText">family friendly, fully electric</span> car with <span>great range</span>
+        </div>
+        <div class="thumbnails">
+          <div class="thumb"><img src="https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&q=80&w=200" alt="car"></div>
+          <div class="thumb"><img src="https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&q=80&w=200" alt="car"></div>
+          <div class="thumb"><img src="https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&q=80&w=200" alt="car"></div>
+        </div>
+        <div class="q-label">
+          <div class="q-bar"></div>
+          1. What kinds of cars are you looking for?
+        </div>
+        <div class="chips" id="chipFlow">
+          <div class="chip primary">Family-friendly ✕</div>
+          <div class="chip primary">Fully electric ✕</div>
+          <div class="chip suggested">COE &lt;5 years +</div>
+          <div class="chip suggested">&lt;2 owners +</div>
+          <div class="chip suggested">Continental +</div>
+          <div class="chip suggested">Asian +</div>
+          <div class="chip suggested">7 seats +</div>
+        </div>
+        <button class="replay-btn" id="replayBtn">↺ Reset demo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Spec ── -->
+  <div class="spec-panel">
+
+    <!-- Concept -->
+    <div class="spec-card">
+      <div class="spec-card-title">Concept</div>
+      <p class="concept-text">
+        <strong>Vaporize &amp; Condense</strong> uses "particle" metaphor to communicate that the old UI state
+        <em>disperses into thin air</em> while a fresh set of options <em>condenses</em> from nothing.
+        The two phases run in sequence — vaporise fires immediately on tap, condense fires once the
+        old chip has vanished (~300 ms). Only suggestion chips participate in the animation;
+        the selected (primary) chips are stable.
+      </p>
+    </div>
+
+    <!-- Animation phases -->
+    <div class="spec-card">
+      <div class="spec-card-title">Animation Phases</div>
+
+      <!-- Phase 1 -->
+      <div class="phase phase-1">
+        <div class="phase-header">
+          <span class="phase-tag">Phase 1</span>
+          <span class="phase-name">Vaporize — tapped chip exits</span>
+          <span class="phase-timing">t = 0 → 300 ms</span>
+        </div>
+        <div class="spec-rows">
+          <div class="spec-row"><span class="spec-key">opacity</span><span class="spec-val">1 → 0</span></div>
+          <div class="spec-row"><span class="spec-key">transform</span><span class="spec-val"><code>scale(1)</code> → <code>scale(1.5)</code></span></div>
+          <div class="spec-row"><span class="spec-key">filter</span><span class="spec-val"><code>blur(0)</code> → <code>blur(4px)</code></span></div>
+          <div class="spec-row"><span class="spec-key">duration</span><span class="spec-val">300 ms</span></div>
+          <div class="spec-row"><span class="spec-key">easing</span><span class="spec-val"><code>cubic-bezier(0.16, 1, 0.3, 1)</code></span></div>
+          <div class="spec-row"><span class="spec-key">CSS class</span><span class="spec-val"><code>.vaporize</code> — added on tap</span></div>
+        </div>
+      </div>
+
+      <!-- Phase 2 -->
+      <div class="phase phase-2" style="margin-top:8px">
+        <div class="phase-header">
+          <span class="phase-tag">Phase 2</span>
+          <span class="phase-name">State swap — at t = 300 ms</span>
+          <span class="phase-timing">Instant, no animation</span>
+        </div>
+        <div class="spec-rows">
+          <div class="spec-row"><span class="spec-key">tapped chip</span><span class="spec-val">Converts to <code>.primary</code>; label <code>"Label +"</code> → <code>"Label ✕"</code></span></div>
+          <div class="spec-row"><span class="spec-key">DOM order</span><span class="spec-val">Inserted before the first suggested chip</span></div>
+          <div class="spec-row"><span class="spec-key">old suggestions</span><span class="spec-val">All <code>.suggested</code> chips removed from DOM</span></div>
+        </div>
+      </div>
+
+      <!-- Phase 3 -->
+      <div class="phase phase-3" style="margin-top:8px">
+        <div class="phase-header">
+          <span class="phase-tag">Phase 3</span>
+          <span class="phase-name">Condense — new suggestions enter</span>
+          <span class="phase-timing">t = 300 ms, staggered</span>
+        </div>
+        <div class="spec-rows">
+          <div class="spec-row"><span class="spec-key">opacity</span><span class="spec-val">0 → 1</span></div>
+          <div class="spec-row"><span class="spec-key">transform</span><span class="spec-val"><code>scale(0.5)</code> → <code>scale(1)</code></span></div>
+          <div class="spec-row"><span class="spec-key">duration</span><span class="spec-val">400 ms per chip</span></div>
+          <div class="spec-row"><span class="spec-key">easing</span><span class="spec-val"><code>cubic-bezier(0.16, 1, 0.3, 1)</code></span></div>
+          <div class="spec-row"><span class="spec-key">stagger delay</span><span class="spec-val">40 ms × chip index (0, 40, 80, 120, 160 ms…)</span></div>
+          <div class="spec-row"><span class="spec-key">CSS class</span><span class="spec-val"><code>.condense</code> + <code>animation-delay</code> set inline</span></div>
+        </div>
+      </div>
+
+      <!-- Deselect -->
+      <div class="phase phase-deselect" style="margin-top:8px">
+        <div class="phase-header">
+          <span class="phase-tag">Deselect</span>
+          <span class="phase-name">Primary chip → suggested (reverse)</span>
+          <span class="phase-timing">t = 0 → 200 ms</span>
+        </div>
+        <div class="spec-rows">
+          <div class="spec-row"><span class="spec-key">transform</span><span class="spec-val"><code>scale(1)</code> → <code>scale(0.8)</code></span></div>
+          <div class="spec-row"><span class="spec-key">opacity</span><span class="spec-val">1 → 0 (via transition)</span></div>
+          <div class="spec-row"><span class="spec-key">duration</span><span class="spec-val">200 ms</span></div>
+          <div class="spec-row"><span class="spec-key">after 200 ms</span><span class="spec-val">Class → <code>.suggested</code>, label <code>"Label ✕"</code> → <code>"Label +"</code>, moved to end of list</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chip visual states -->
+    <div class="spec-card">
+      <div class="spec-card-title">Chip Visual States</div>
+      <div class="chip-states" style="margin-bottom:20px">
+        <div class="chip-state-item">
+          <div class="demo-chip primary">Family-friendly ✕</div>
+          <div class="chip-state-label">Primary (selected)</div>
+        </div>
+        <div class="chip-state-item">
+          <div class="demo-chip suggested">Asian +</div>
+          <div class="chip-state-label">Suggested</div>
+        </div>
+      </div>
+      <table class="token-table">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Primary (selected)</th>
+            <th>Suggested</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Background</td><td><code>#f0f7f7</code></td><td><code>#ffffff</code></td></tr>
+          <tr><td>Border</td><td><code>1.5px solid #1a4d4d</code></td><td><code>1.5px dashed #cccccc</code></td></tr>
+          <tr><td>Text colour</td><td><code>#1a4d4d</code></td><td><code>#666666</code></td></tr>
+          <tr><td>Font weight</td><td>600</td><td>400–500</td></tr>
+          <tr><td>Label suffix</td><td><code>Label ✕</code></td><td><code>Label +</code></td></tr>
+          <tr><td>Padding</td><td colspan="2"><code>7px 13px</code></td></tr>
+          <tr><td>Border-radius</td><td colspan="2"><code>20px</code></td></tr>
+          <tr><td>Font size</td><td colspan="2"><code>12.5px</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Easing curves -->
+    <div class="spec-card">
+      <div class="spec-card-title">Easing Curves</div>
+      <div class="easing-wrap">
+        <div class="easing-item">
+          <div class="easing-name">--fluid (all transforms)</div>
+          <svg class="easing-curve" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="80" height="80" rx="8" fill="#F6F6F6"/>
+            <line x1="8" y1="72" x2="72" y2="72" stroke="#E0E0E0" stroke-width="1"/>
+            <line x1="8" y1="8"  x2="8"  y2="72" stroke="#E0E0E0" stroke-width="1"/>
+            <!-- cubic-bezier(0.16, 1, 0.3, 1) -->
+            <path d="M8 72 C20.8 72 32 8 72 8" stroke="#1a4d4d" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="8"  cy="72" r="3" fill="#1a4d4d"/>
+            <circle cx="72" cy="8"  r="3" fill="#1a4d4d"/>
+          </svg>
+          <div class="easing-val"><code>cubic-bezier(0.16, 1, 0.3, 1)</code><br>Fast start, smooth settle. No overshoot.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CSS reference -->
+    <div class="spec-card">
+      <div class="spec-card-title">CSS Reference</div>
+      <pre style="background:var(--code-bg);border-radius:10px;padding:16px;font-size:11.5px;font-family:'SF Mono','Fira Code',monospace;line-height:1.7;overflow-x:auto;color:var(--ink)">/* Easing token */
+--fluid: cubic-bezier(0.16, 1, 0.3, 1);
+
+/* Phase 1 — vaporize (applied on tap) */
+.chip.vaporize {
+  opacity: 0;
+  transform: scale(1.5);
+  filter: blur(4px);
+  transition: opacity 300ms var(--fluid),
+              transform 300ms var(--fluid),
+              filter 300ms var(--fluid);
+}
+
+/* Phase 3 — condense (new chips enter) */
+@keyframes condenseAnim {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1);   }
+}
+.chip.condense {
+  animation: condenseAnim 400ms var(--fluid) both;
+  /* animation-delay set inline: index * 40ms */
+}
+
+/* Deselect exit */
+.chip {
+  transition: all 200ms var(--fluid);
+}
+/* JS sets: transform: scale(0.8), opacity: 0
+   then after 200ms swaps class to .suggested */</pre>
+    </div>
+
+    <!-- JS logic summary -->
+    <div class="spec-card">
+      <div class="spec-card-title">Logic Flow</div>
+      <table class="token-table">
+        <thead><tr><th>Step</th><th>Action</th><th>Timing</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>User taps a <code>.suggested</code> chip</td><td>t = 0</td></tr>
+          <tr><td>2</td><td>Add <code>.vaporize</code> class to tapped chip</td><td>t = 0</td></tr>
+          <tr><td>3</td><td>Convert chip to <code>.primary</code>, update label, insert before first suggested chip</td><td>t = 300 ms</td></tr>
+          <tr><td>4</td><td>Remove all remaining <code>.suggested</code> chips from DOM</td><td>t = 300 ms</td></tr>
+          <tr><td>5</td><td>Create new <code>.suggested</code> chips with <code>.condense</code> class; set <code>animation-delay: i * 40ms</code></td><td>t = 300 ms</td></tr>
+          <tr><td>6</td><td>User taps a <code>.primary</code> chip to deselect</td><td>t = 0</td></tr>
+          <tr><td>7</td><td>Set <code>transform: scale(0.8)</code> on chip</td><td>t = 0</td></tr>
+          <tr><td>8</td><td>Swap to <code>.suggested</code>, reset styles, move to end of list</td><td>t = 200 ms</td></tr>
+        </tbody>
+      </table>
+      <p class="footer-note" style="margin-top:12px">New suggestions pool: Continental, Asian, 7 seats, MPV, SUV — replace with dynamic data from backend in production.</p>
+    </div>
+
+  </div><!-- /spec-panel -->
+</div><!-- /layout -->
+
+<script>
+  const chipFlow = document.getElementById('chipFlow');
+  const sumText  = document.getElementById('sumText');
+
+  const initialHTML = chipFlow.innerHTML;
+
+  // Build summary from current primary chips
+  function updateSummary() {
+    const primaries = [...chipFlow.querySelectorAll('.chip.primary')]
+      .map(c => c.innerText.replace(' ✕', '').toLowerCase());
+    if (primaries.length === 0) { sumText.textContent = 'something'; return; }
+    if (primaries.length === 1) { sumText.textContent = primaries[0]; return; }
+    const last = primaries.pop();
+    sumText.textContent = primaries.join(', ') + ' & ' + last;
+  }
+
+  function finalize(chip, text) {
+    chip.className = 'chip primary';
+    chip.innerText = text + ' ✕';
+    chip.style.transform = '';
+    chip.style.filter = '';
+    chip.style.opacity = '';
+    chip.classList.remove('vaporize');
+    const firstS = chipFlow.querySelector('.chip.suggested');
+    if (firstS) chipFlow.insertBefore(chip, firstS);
+    else chipFlow.appendChild(chip);
+    updateSummary();
+  }
+
+  function refreshSuggestions() {
+    chipFlow.querySelectorAll('.chip.suggested').forEach(c => c.remove());
+    const items = ['Continental', 'Asian', '7 seats', 'MPV', 'SUV'];
+    items.forEach((t, i) => {
+      const c = document.createElement('div');
+      c.className = 'chip suggested condense';
+      c.style.animationDelay = (i * 40) + 'ms';
+      c.innerText = t + ' +';
+      chipFlow.appendChild(c);
+    });
+  }
+
+  chipFlow.addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+
+    if (chip.classList.contains('suggested')) {
+      const text = chip.innerText.replace(' +', '').trim();
+      // Phase 1 — vaporize
+      chip.classList.add('vaporize');
+      // Phase 2 + 3 after 300ms
+      setTimeout(() => {
+        finalize(chip, text);
+        refreshSuggestions();
+      }, 300);
+    }
+
+    else if (chip.classList.contains('primary')) {
+      const text = chip.innerText.replace(' ✕', '').trim();
+      // Deselect exit
+      chip.style.transition = 'transform 200ms var(--fluid), opacity 200ms var(--fluid)';
+      chip.style.transform = 'scale(0.8)';
+      chip.style.opacity = '0';
+      setTimeout(() => {
+        chip.className = 'chip suggested';
+        chip.style.cssText = '';
+        chip.innerText = text + ' +';
+        chipFlow.appendChild(chip);
+        updateSummary();
+      }, 200);
+    }
+  });
+
+  document.getElementById('replayBtn').addEventListener('click', () => {
+    chipFlow.innerHTML = initialHTML;
+    updateSummary();
+  });
+
+  updateSummary();
+</script>
+</body>
+</html>
